@@ -1,0 +1,15 @@
+/.phpunit.result.cache
+/.phpunit.cache
+/.php-cs-fixer.cache
+/.php-cs-fixer.php
+/.windsurf/
+/.idea/
+/composer.lock
+/phpunit.xml
+/vendor/
+*.swp
+*.swo
+requirements.txt
+project_log.txt
+project_structure.txt
+tasks.txt

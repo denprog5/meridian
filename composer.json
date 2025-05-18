@@ -1,0 +1,64 @@
+{
+    "name": "denprog/meridian",
+    "description": "Simplify internationalization in your Laravel projects with Meridian. Easily manage countries, currencies, exchange rates, languages, and perform GeoIP lookups.",
+    "keywords": ["php", "laravel", "package", "meridian", "meridian-laravel", "countries", "currencies", "exchange-rates", "languages", "geoip"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Denis Liakhar",
+            "email": "denisprogressive@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3.0",
+        "laravel/framework": "^v11.44.7|^12.14"
+    },
+    "require-dev": {
+        "laravel/pint": "^v1.22.1",
+        "pestphp/pest": "^4.0.0",
+        "pestphp/pest-plugin-type-coverage": "^4.0.0",
+        "phpstan/phpstan": "^2.1.16",
+        "rector/rector": "^2.0.16",
+        "symfony/var-dumper": "^7.2.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Denprog\\Meridian\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "refactor": "rector",
+        "lint": "pint",
+        "test:refactor": "rector --dry-run",
+        "test:lint": "pint --test",
+        "test:types": "phpstan analyse --ansi",
+        "test:unit": "pest --colors=always --coverage --parallel --min=100",
+        "test": [
+            "@test:refactor",
+            "@test:lint",
+            "@test:types",
+            "@test:unit"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Denprog\\Meridian\\MeridianServiceProvider"
+            ]
+        }
+    }
+}

@@ -14,7 +14,7 @@ enum Continent: string
     case OCEANIA = 'OC';
     case SOUTH_AMERICA = 'SA';
 
-    public function getName(): string
+    public function name(): string
     {
         return match ($this) {
             self::AFRICA => 'Africa',
@@ -30,39 +30,11 @@ enum Continent: string
     /**
      * Get the localized name of the continent.
      */
-    public function getLocalizedName(?string $locale = null): string
+    public function localizedName(?string $locale = null): string
     {
         $key = "meridian::continents.$this->value";
-        $translated = trans($key, [], $locale);
+        $translated = trans(key: $key, locale: $locale);
 
-        if (is_array($translated)){
-            return $this->getName();
-        }
-
-        return $translated === $key ? $this->getName() : $translated;
-    }
-
-    /**
-     * @return array<string, string> An associative array of [code => name]
-     */
-    public static function all(): array
-    {
-        $cases = [];
-        foreach (self::cases() as $case) {
-            $cases[$case->value] = $case->getName();
-        }
-        return $cases;
-    }
-
-    /**
-     * @return array<string, string> An associative array of [code => localized name]
-     */
-    public static function allLocalized(?string $locale = null): array
-    {
-        $cases = [];
-        foreach (self::cases() as $case) {
-            $cases[$case->value] = $case->getLocalizedName($locale);
-        }
-        return $cases;
+        return $translated === $key || is_array($translated) ? $this->name() : $translated;
     }
 }

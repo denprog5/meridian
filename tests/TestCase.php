@@ -12,7 +12,6 @@ use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
 class TestCase extends OrchestraTestCase
 {
-
     use RefreshDatabase;
 
     /**
@@ -33,5 +32,4 @@ class TestCase extends OrchestraTestCase
         parent::setUp();
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
-
 }

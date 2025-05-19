@@ -2,5 +2,6 @@ parameters:
     level: max
     paths:
         - src
+        - database
 
     reportUnmatchedIgnoredErrors: true

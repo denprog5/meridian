@@ -32,8 +32,8 @@ class CountryFactory extends Factory
         return [
             'continent_code' => fake()->randomElement(Continent::class),
             'name' => $name,
-            'official_name' => $name . ' Official Name',
-            'native_name' => $name . ' Native',
+            'official_name' => $name.' Official Name',
+            'native_name' => $name.' Native',
             'iso_alpha_2' => fake()->unique()->countryCode(),
             'iso_alpha_3' => fake()->unique()->countryISOAlpha3(),
             'iso_numeric' => fake()->unique()->numerify('###'),

@@ -23,7 +23,6 @@ use Illuminate\Support\Carbon;
  * @property string $iso_alpha_3 ISO 3166-1 alpha-3 code
  * @property string|null $iso_numeric ISO 3166-1 numeric code
  * @property string|null $phone_code International phone calling code(s), comma-separated if multiple
- * @property bool $enabled
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -31,6 +30,22 @@ class Country extends Model
 {
     /** @use HasFactory<CountryFactory> */
     use HasFactory;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'official_name',
+        'native_name',
+        'iso_alpha_2',
+        'iso_alpha_3',
+        'iso_numeric',
+        'phone_code',
+        'continent_code',
+    ];
 
     /**
      * Get the localized name of the country.
@@ -69,7 +84,6 @@ class Country extends Model
     {
         return [
             'continent_code' => Continent::class,
-            'enabled' => 'boolean',
         ];
     }
 }

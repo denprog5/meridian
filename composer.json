@@ -25,7 +25,8 @@
     "autoload": {
         "psr-4": {
             "Denprog\\Meridian\\": "src/",
-            "Denprog\\Meridian\\Database\\Factories\\": "database/factories/"
+            "Denprog\\Meridian\\Database\\Factories\\": "database/factories/",
+            "Denprog\\Meridian\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "autoload-dev": {

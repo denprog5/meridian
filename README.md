@@ -1,4 +1,4 @@
-# Meridian: Your Elegant Compass for Geodata, Currencies, and Languages in Laravel
+# !!!IN DEVELOPMENT!!! Meridian: Your Elegant Compass for Geodata, Currencies, and Languages in Laravel
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/denprog/meridian.svg?style=flat-square)](https://packagist.org/packages/denprog/meridian)
 [![Total Downloads](https://img.shields.io/packagist/dt/denprog/meridian.svg?style=flat-square)](https://packagist.org/packages/denprog/meridian)

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Database\Seeders;
 
+use ArrayAccess;
 use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Exception;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -20,62 +21,50 @@ class CountrySeeder extends Seeder
     public function run(): void
     {
         $jsonFilePath = __DIR__.'/../../resources/countries.json';
-
         if (! File::exists($jsonFilePath)) {
-            if ($this->command) {
-                $this->command->error('countries.json not found at '.$jsonFilePath);
-            }
-            Log::error('[CountrySeeder] countries.json not found at '.$jsonFilePath);
+            $this->logAndOutput('countries.json not found at '.$jsonFilePath, 'error');
 
             return;
         }
 
         try {
             $jsonData = File::get($jsonFilePath);
-        } catch (FileNotFoundException $e) {
-            if ($this->command) {
-                $this->command->error('Error reading countries.json: '.$e->getMessage());
-            }
-            Log::error('[CountrySeeder] Error reading countries.json: '.$e->getMessage());
+        } catch (Exception $e) {
+            $this->logAndOutput('Error reading countries.json: '.$e->getMessage(), 'error');
 
             return;
         }
+
         $allCountriesData = json_decode($jsonData, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            if ($this->command) {
-                $this->command->error('Error decoding countries.json: '.json_last_error_msg());
-            }
-            Log::error('[CountrySeeder] Error decoding countries.json: '.json_last_error_msg());
+            $this->logAndOutput('Error decoding countries.json: '.json_last_error_msg(), 'error');
 
             return;
         }
 
         if (empty($allCountriesData) || ! is_array($allCountriesData)) {
-            if ($this->command) {
-                $this->command->info('countries.json is empty. No countries to seed.');
-            }
-            Log::info('[CountrySeeder] countries.json is empty.');
+            $this->logAndOutput('countries.json is empty. No countries to seed.');
 
             return;
         }
 
-        if ($this->command) {
-            $this->command->getOutput()->progressStart(count($allCountriesData));
-        }
+        $this->startProgress(count($allCountriesData));
 
         foreach ($allCountriesData as $countryJson) {
+            if (! is_array($countryJson) && ! ($countryJson instanceof ArrayAccess)) {
+                continue;
+            }
             $dataToSeed = [
                 'name' => Arr::get($countryJson, 'name.common'),
                 'official_name' => Arr::get($countryJson, 'name.official'),
-                'native_name' => null, // Placeholder, will be refined below
+                'native_name' => null,
                 'iso_alpha_2' => Arr::get($countryJson, 'cca2'),
                 'iso_alpha_3' => Arr::get($countryJson, 'cca3'),
                 'iso_numeric' => Arr::get($countryJson, 'ccn3'),
-                'phone_code' => null, // Placeholder, will be refined below
+                'phone_code' => null,
             ];
 
-            // Native Name (first official native name found)
             $nativeNames = Arr::get($countryJson, 'name.native', []);
             if (! empty($nativeNames) && is_array($nativeNames)) {
                 $firstNative = reset($nativeNames);
@@ -84,19 +73,20 @@ class CountrySeeder extends Seeder
                 }
             }
 
-            // Continent Code
             $region = Arr::get($countryJson, 'region');
             $subregion = Arr::get($countryJson, 'subregion');
+            if (! is_string($subregion)) {
+                $subregion = '';
+            }
             $continentValue = null;
             switch ($region) {
                 case 'Africa':
                     $continentValue = Continent::AFRICA->value;
                     break;
                 case 'Americas':
-                    if (str_contains((string) $subregion, 'South America')) {
+                    if (str_contains($subregion, 'South America')) {
                         $continentValue = Continent::SOUTH_AMERICA->value;
                     } else {
-                        // North America, Central America, Caribbean
                         $continentValue = Continent::NORTH_AMERICA->value;
                     }
                     break;
@@ -110,47 +100,92 @@ class CountrySeeder extends Seeder
                     $continentValue = Continent::OCEANIA->value;
                     break;
                 case 'Antarctic':
-                case 'Antarctica': // Adding 'Antarctica' as some datasets might use it
+                case 'Antarctica':
                     $continentValue = Continent::ANTARCTICA->value;
                     break;
-                default:
-                    Log::warning('[CountrySeeder] Unknown region for country '.$dataToSeed['iso_alpha_2'].': '.$region.' (Subregion: '.$subregion.')');
             }
             $dataToSeed['continent_code'] = $continentValue;
 
-            // Phone Code (construct from root and suffixes)
-            $idd = Arr::get($countryJson, 'idd', []);
-            $root = Arr::get($idd, 'root');
-            $suffixes = Arr::get($idd, 'suffixes', []);
-            if ($root && ! empty($suffixes)) {
+            $root = Arr::get($countryJson, 'idd.root', '');
+            $suffixes = Arr::get($countryJson, 'idd.suffixes', []);
+            if (is_string($root) && ! empty($suffixes) && is_array($suffixes)) {
                 $phoneCodes = [];
                 foreach ($suffixes as $suffix) {
-                    $phoneCodes[] = $root.$suffix;
+                    if (is_string($suffix)) {
+                        $phoneCodes[] = $root.$suffix;
+                    }
                 }
                 $dataToSeed['phone_code'] = implode(',', $phoneCodes);
             } elseif ($root) {
-                // Handle cases where there's a root but no suffixes (e.g. Antarctica +672)
-                // Though the JSON structure usually has suffixes even for single ones.
                 $dataToSeed['phone_code'] = $root;
             }
 
-            // Filter out any null values if necessary, depending on column definitions
-            // $dataToSeed = array_filter($dataToSeed, fn ($value) => !is_null($value));
-
             Country::query()->updateOrCreate(
-                ['iso_alpha_2' => $dataToSeed['iso_alpha_2']], // Match by iso_alpha_2
-                $dataToSeed // Data to create or update with
+                ['iso_alpha_2' => $dataToSeed['iso_alpha_2']],
+                $dataToSeed
             );
 
-            if ($this->command) {
-                $this->command->getOutput()->progressAdvance();
-            }
+            $this->advanceProgress();
         }
 
+        $this->finishProgress();
+        $this->logAndOutput('Countries seeded successfully from '.basename($jsonFilePath).'.');
+    }
+
+    /**
+     * Log a message and optionally output to the console.
+     *
+     * @param  string  $message  The message to log and output.
+     * @param  string  $logLevel  The log level (e.g., 'info', 'error', 'warning').
+     * @param  string|null  $consoleStyle  The console style for output (e.g., 'info', 'error', 'warn'). Defaults to logLevel.
+     */
+    protected function logAndOutput(string $message, string $logLevel = 'info', ?string $consoleStyle = null): void
+    {
+        $logMessage = '[CountrySeeder] '.$message;
+        match (mb_strtolower($logLevel)) {
+            'error' => Log::error($logMessage),
+            'warning' => Log::warning($logMessage),
+            default => Log::info($logMessage),
+        };
+
+        /** @phpstan-ignore-next-line */
         if ($this->command) {
-            $this->command->getOutput()->progressFinish();
-            $this->command->info('Countries seeded successfully from '.basename($jsonFilePath).'.');
+            $consoleOutputStyle = $consoleStyle ?? $logLevel;
+            if ($consoleOutputStyle === 'warning') {
+                $consoleOutputStyle = 'warn';
+            }
+            if (method_exists($this->command, $consoleOutputStyle)) {
+                $this->command->{$consoleOutputStyle}($message);
+            } else {
+                $this->command->line($message);
+            }
         }
-        Log::info('[CountrySeeder] Seeding completed successfully from '.basename($jsonFilePath).'.');
+    }
+
+    /**
+     * Start the progress bar if the command output is available.
+     */
+    protected function startProgress(int $total): void
+    {
+        /** @phpstan-ignore-next-line */
+        $this->command?->getOutput()->progressStart($total);
+    }
+
+    /**
+     * Advance the progress bar if the command output is available.
+     */
+    protected function advanceProgress(): void
+    {
+        /** @phpstan-ignore-next-line */
+        $this->command?->getOutput()->progressAdvance();
+    }
+
+    /**
+     * Finish the progress bar if the command output is available.
+     */
+    protected function finishProgress(): void
+    {
+        /** @phpstan-ignore-next-line */
+        $this->command?->getOutput()->progressFinish();
     }
 }

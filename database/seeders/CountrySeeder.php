@@ -56,25 +56,25 @@ class CountrySeeder extends Seeder
                 continue;
             }
             $dataToSeed = [
-                'name' => Arr::get($countryJson, 'name.common'),
-                'official_name' => Arr::get($countryJson, 'name.official'),
+                'name' => data_get($countryJson, 'name.common'),
+                'official_name' => data_get($countryJson, 'name.official'),
                 'native_name' => null,
-                'iso_alpha_2' => Arr::get($countryJson, 'cca2'),
-                'iso_alpha_3' => Arr::get($countryJson, 'cca3'),
-                'iso_numeric' => Arr::get($countryJson, 'ccn3'),
+                'iso_alpha_2' => data_get($countryJson, 'cca2'),
+                'iso_alpha_3' => data_get($countryJson, 'cca3'),
+                'iso_numeric' => data_get($countryJson, 'ccn3'),
                 'phone_code' => null,
             ];
 
-            $nativeNames = Arr::get($countryJson, 'name.native', []);
+            $nativeNames = data_get($countryJson, 'name.native', []);
             if (! empty($nativeNames) && is_array($nativeNames)) {
-                $firstNative = reset($nativeNames);
-                if (is_array($firstNative) && isset($firstNative['official'])) {
-                    $dataToSeed['native_name'] = $firstNative['official'];
+                $firstNative = Arr::first($nativeNames);
+                if (is_array($firstNative)) {
+                    $dataToSeed['native_name'] = data_get($firstNative, 'official');
                 }
             }
 
-            $region = Arr::get($countryJson, 'region');
-            $subregion = Arr::get($countryJson, 'subregion');
+            $region = data_get($countryJson, 'region');
+            $subregion = data_get($countryJson, 'subregion');
             if (! is_string($subregion)) {
                 $subregion = '';
             }
@@ -100,26 +100,23 @@ class CountrySeeder extends Seeder
                     $dataToSeed['continent_code'] = Continent::OCEANIA->value;
                     break;
                 case 'Antarctic':
-                case 'Antarctica':
                     $dataToSeed['continent_code'] = Continent::ANTARCTICA->value;
                     break;
             }
 
-            $root = Arr::get($countryJson, 'idd.root', '');
-            $suffixes = Arr::get($countryJson, 'idd.suffixes', []);
-            if (is_string($root) && ! empty($suffixes) && is_array($suffixes)) {
-                $phoneCodes = [];
-                foreach ($suffixes as $suffix) {
-                    if (is_string($suffix)) {
-                        $phoneCodes[] = $root.$suffix;
-                    }
-                }
-                $dataToSeed['phone_code'] = implode(',', $phoneCodes);
-            } elseif ($root) {
-                $dataToSeed['phone_code'] = $root;
+            $root = data_get($countryJson, 'idd.root');
+            $suffixes = data_get($countryJson, 'idd.suffixes', []);
+
+            if (is_string($root) && is_array($suffixes)) {
+                $validSuffixes = collect($suffixes)
+                    ->filter(fn ($suffix): bool => is_string($suffix))
+                    /** @phpstan-ignore-next-line */
+                    ->map(fn ($suffix): string => $root.$suffix)
+                    ->all();
+                $dataToSeed['phone_code'] = empty($validSuffixes) ? $root : implode(',', $validSuffixes);
             }
 
-            Country::query()->updateOrCreate($dataToSeed);
+            Country::query()->updateOrCreate(['iso_alpha_2' => $dataToSeed['iso_alpha_2']], $dataToSeed);
 
             $this->advanceProgress();
         }

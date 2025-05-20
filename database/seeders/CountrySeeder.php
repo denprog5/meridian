@@ -78,33 +78,32 @@ class CountrySeeder extends Seeder
             if (! is_string($subregion)) {
                 $subregion = '';
             }
-            $continentValue = null;
+
             switch ($region) {
                 case 'Africa':
-                    $continentValue = Continent::AFRICA->value;
+                    $dataToSeed['continent_code'] = Continent::AFRICA->value;
                     break;
                 case 'Americas':
                     if (str_contains($subregion, 'South America')) {
-                        $continentValue = Continent::SOUTH_AMERICA->value;
+                        $dataToSeed['continent_code'] = Continent::SOUTH_AMERICA->value;
                     } else {
-                        $continentValue = Continent::NORTH_AMERICA->value;
+                        $dataToSeed['continent_code'] = Continent::NORTH_AMERICA->value;
                     }
                     break;
                 case 'Asia':
-                    $continentValue = Continent::ASIA->value;
+                    $dataToSeed['continent_code'] = Continent::ASIA->value;
                     break;
                 case 'Europe':
-                    $continentValue = Continent::EUROPE->value;
+                    $dataToSeed['continent_code'] = Continent::EUROPE->value;
                     break;
                 case 'Oceania':
-                    $continentValue = Continent::OCEANIA->value;
+                    $dataToSeed['continent_code'] = Continent::OCEANIA->value;
                     break;
                 case 'Antarctic':
                 case 'Antarctica':
-                    $continentValue = Continent::ANTARCTICA->value;
+                    $dataToSeed['continent_code'] = Continent::ANTARCTICA->value;
                     break;
             }
-            $dataToSeed['continent_code'] = $continentValue;
 
             $root = Arr::get($countryJson, 'idd.root', '');
             $suffixes = Arr::get($countryJson, 'idd.suffixes', []);
@@ -120,10 +119,7 @@ class CountrySeeder extends Seeder
                 $dataToSeed['phone_code'] = $root;
             }
 
-            Country::query()->updateOrCreate(
-                ['iso_alpha_2' => $dataToSeed['iso_alpha_2']],
-                $dataToSeed
-            );
+            Country::query()->updateOrCreate($dataToSeed);
 
             $this->advanceProgress();
         }

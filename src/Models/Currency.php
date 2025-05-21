@@ -43,6 +43,16 @@ class Currency extends Model
     ];
 
     /**
+     * Create a new factory instance for the model.
+     *
+     * @return Factory<Currency>
+     */
+    protected static function newFactory(): Factory
+    {
+        return CurrencyFactory::new();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -53,15 +63,5 @@ class Currency extends Model
             'decimal_places' => 'integer',
             'enabled' => 'boolean',
         ];
-    }
-
-    /**
-     * Create a new factory instance for the model.
-     *
-     * @return Factory<Currency>
-     */
-    protected static function newFactory(): Factory
-    {
-        return CurrencyFactory::new();
     }
 }

@@ -28,3 +28,4 @@ Thumbs.db
 .env.local
 .env.*.local
 /transform_countries.php
+/compare_and_merge_countries.php

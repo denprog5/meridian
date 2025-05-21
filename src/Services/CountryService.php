@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Services;
 
+use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -31,19 +32,57 @@ class CountryService
     /**
      * Find a country by its ISO Alpha-2 code.
      *
-     * @param  string  $isoAlpha2  The ISO Alpha-2 code.
+     * @param  string  $isoAlpha2Code  The ISO Alpha-2 code.
      * @param  bool  $useCache  Whether to use cache.
      * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
      */
-    public function findCountryByIsoAlpha2(string $isoAlpha2, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
+    public function findCountryByIsoAlpha2Code(string $isoAlpha2Code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
     {
-        $cacheKey = 'country.iso_alpha_2.'.mb_strtoupper($isoAlpha2);
+        $cacheKey = 'country.iso_alpha_2.'.mb_strtoupper($isoAlpha2Code);
         if ($useCache) {
             /** @var Country|null */
-            return Cache::remember($cacheKey, now()->addMinutes($cacheTtlMinutes), fn () => Country::query()->where('iso_alpha_2', mb_strtoupper($isoAlpha2))->first());
+            return Cache::remember($cacheKey, now()->addMinutes($cacheTtlMinutes), fn () => Country::query()->where('iso_alpha_2', mb_strtoupper($isoAlpha2Code))->first());
         }
 
-        return Country::query()->where('iso_alpha_2', mb_strtoupper($isoAlpha2))->first();
+        return Country::query()->where('iso_alpha_2', mb_strtoupper($isoAlpha2Code))->first();
+    }
+
+    /**
+     * Find a country by its ISO Alpha-3 code.
+     *
+     * @param  string  $isoAlpha3Code  The ISO Alpha-3 code.
+     * @param  bool  $useCache  Whether to use cache.
+     * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
+     */
+    public function findCountryByIsoAlpha3Code(string $isoAlpha3Code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
+    {
+        $cacheKey = 'country.iso_alpha_3.'.mb_strtoupper($isoAlpha3Code);
+        if ($useCache) {
+            /** @var Country|null */
+            return Cache::remember($cacheKey, now()->addMinutes($cacheTtlMinutes), fn () => Country::query()->where('iso_alpha_3', mb_strtoupper($isoAlpha3Code))->first());
+        }
+
+        return Country::query()->where('iso_alpha_3', mb_strtoupper($isoAlpha3Code))->first();
+    }
+
+    /**
+     * Get countries by a specific continent.
+     *
+     * @param  Continent  $continent  The continent enum instance.
+     * @param  bool  $useCache  Whether to use cache.
+     * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
+     * @return Collection<int, Country>
+     */
+    public function getCountriesByContinent(Continent $continent, bool $useCache = true, int $cacheTtlMinutes = 60): Collection
+    {
+        $cacheKey = 'countries.continent.'.$continent->value;
+        if ($useCache) {
+            /** @var Collection<int, Country> */
+            return Cache::remember($cacheKey, now()->addMinutes($cacheTtlMinutes), fn () => Country::query()->where('continent_code', $continent->value)->orderBy('name')->get());
+        }
+
+        /** @var Collection<int, Country> */
+        return Country::query()->where('continent_code', $continent->value)->orderBy('name')->get();
     }
 
     /**

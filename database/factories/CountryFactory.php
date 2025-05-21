@@ -36,8 +36,20 @@ class CountryFactory extends Factory
             'native_name' => $name.' Native',
             'iso_alpha_2' => fake()->unique()->countryCode(),
             'iso_alpha_3' => fake()->unique()->countryISOAlpha3(),
-            'iso_numeric' => fake()->unique()->numerify('###'),
+            'iso_numeric' => fake()->unique()->numerify(),
             'phone_code' => fake()->numerify('+###'),
         ];
+    }
+
+    /**
+     * Indicate that the country belongs to a specific continent.
+     *
+     * @param  Continent  $continent  The continent enum case.
+     */
+    public function forContinent(Continent $continent): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'continent_code' => $continent,
+        ]);
     }
 }

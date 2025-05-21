@@ -21,28 +21,32 @@ class CurrencySeeder extends Seeder
             $this->command->line('Seeding currencies quietly...');
         }
 
-        $jsonPath = __DIR__ . '/../../resources/currencies.json';
+        $jsonPath = __DIR__.'/../../resources/currencies.json';
 
-        if (!File::exists($jsonPath)) {
-            $this->command->error('currencies.json not found at ' . $jsonPath);
+        if (! File::exists($jsonPath)) {
+            $this->command->error('currencies.json not found at '.$jsonPath);
+
             return;
         }
 
         try {
             $jsonData = File::get($jsonPath);
         } catch (Exception $e) {
-            $this->command->error('Error reading currencies.json: ' . $e->getMessage());
+            $this->command->error('Error reading currencies.json: '.$e->getMessage());
+
             return;
         }
         $currenciesArray = json_decode($jsonData, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->command->error('Error decoding currencies.json: ' . json_last_error_msg());
+            $this->command->error('Error decoding currencies.json: '.json_last_error_msg());
+
             return;
         }
 
         if (empty($currenciesArray) || ! is_array($currenciesArray)) {
             $this->command->warn('No currencies found in currencies.json or the file is empty.');
+
             return;
         }
 
@@ -75,6 +79,6 @@ class CurrencySeeder extends Seeder
         if (! $this->command->getOutput()->isQuiet()) {
             $this->command->getOutput()->progressFinish();
         }
-        $this->command->info(count($currenciesArray) . ' currencies seeded successfully from JSON.');
+        $this->command->info(count($currenciesArray).' currencies seeded successfully from JSON.');
     }
 }

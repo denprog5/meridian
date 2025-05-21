@@ -12,14 +12,14 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
 
-test('getAllCountries returns all countries', function (): void {
+it('return all countries', function (): void {
     CountryFactory::new()->count(5)->create();
     $countries = (new CountryService)->getAllCountries(false);
     expect($countries)->toBeInstanceOf(Collection::class)
         ->and($countries)->toHaveCount(5);
 });
 
-test('getAllCountries uses cache', function (): void {
+it('return all countries uses cache', function (): void {
     CountryFactory::new()->count(3)->create();
 
     Cache::shouldReceive('remember')
@@ -37,19 +37,19 @@ test('getAllCountries uses cache', function (): void {
         ->toHaveCount(3);
 });
 
-test('findCountryByIsoAlpha2Code returns correct country', function (): void {
+it('return country by ISO alpha 2 code', function (): void {
     $countryService = new CountryService;
     $country = CountryFactory::new()->create(['iso_alpha_2' => 'XY']);
 
-    $foundCountry = $countryService->findCountryByIsoAlpha2Code('XY', false);
+    $foundCountry = $countryService->findByIsoAlpha2Code('XY', false);
     expect($foundCountry)->toBeInstanceOf(Country::class)
         ->and($foundCountry->id)->toBe($country->id);
 
-    $notFoundCountry = $countryService->findCountryByIsoAlpha2Code('ZZ', false);
+    $notFoundCountry = $countryService->findByIsoAlpha2Code('ZZ', false);
     expect($notFoundCountry)->toBeNull();
 });
 
-test('findCountryByIsoAlpha2Code uses cache', function (): void {
+it('return country by ISO alpha 2 code uses cache', function (): void {
     $countryService = new CountryService;
     CountryFactory::new()->create(['iso_alpha_2' => 'AB']);
     $isoAlpha2Code = 'AB';
@@ -58,13 +58,14 @@ test('findCountryByIsoAlpha2Code uses cache', function (): void {
         ->once()
         ->with('country.iso_alpha_2.'.mb_strtoupper($isoAlpha2Code), Mockery::any(), Mockery::on(function ($closure) use ($isoAlpha2Code): bool {
             $data = $closure();
-            expect($data)->toBeInstanceOf(Country::class)->and($data->iso_alpha_2)->toBe(mb_strtoupper($isoAlpha2Code));
+            expect($data)->toBeInstanceOf(Country::class)
+                ->and($data->iso_alpha_2)->toBe(mb_strtoupper($isoAlpha2Code));
 
             return true;
         }))
         ->andReturn(Country::query()->where('iso_alpha_2', mb_strtoupper($isoAlpha2Code))->first());
 
-    $foundCountry = $countryService->findCountryByIsoAlpha2Code($isoAlpha2Code);
+    $foundCountry = $countryService->findByIsoAlpha2Code($isoAlpha2Code);
     expect($foundCountry)->toBeInstanceOf(Country::class)->and($foundCountry->iso_alpha_2)->toBe($isoAlpha2Code);
 
     $isoAlpha2NotFound = 'CD';
@@ -73,11 +74,10 @@ test('findCountryByIsoAlpha2Code uses cache', function (): void {
         ->with('country.iso_alpha_2.'.mb_strtoupper($isoAlpha2NotFound), Mockery::any(), Mockery::any())
         ->andReturnNull();
 
-    $notFound = $countryService->findCountryByIsoAlpha2Code($isoAlpha2NotFound);
-    expect($notFound)->toBeNull();
+    expect($countryService->findByIsoAlpha2Code($isoAlpha2NotFound))->toBeNull();
 });
 
-test('findCountryByIsoAlpha3Code returns correct country', function (): void {
+it('return country by ISO alpha 3 code', function (): void {
     $countryService = new CountryService;
     $country = CountryFactory::new()->create(['iso_alpha_3' => 'XYZ']);
 
@@ -89,7 +89,7 @@ test('findCountryByIsoAlpha3Code returns correct country', function (): void {
     expect($notFoundCountry)->toBeNull();
 });
 
-test('findCountryByIsoAlpha3Code uses cache', function (): void {
+it('return country by ISO alpha 3 code uses cache', function (): void {
     $countryService = new CountryService;
     CountryFactory::new()->create(['iso_alpha_3' => 'ABC']);
     $isoAlpha3Code = 'ABC';
@@ -117,25 +117,23 @@ test('findCountryByIsoAlpha3Code uses cache', function (): void {
     expect($notFound)->toBeNull();
 });
 
-test('getCountriesByContinent returns correct countries', function (): void {
+it('return correct countries by continent', function (): void {
     $countryService = new CountryService;
-    $europeContinent = Continent::EUROPE;
-    $asiaContinent = Continent::ASIA;
 
-    CountryFactory::new()->forContinent($europeContinent)->count(3)->create();
-    CountryFactory::new()->forContinent($asiaContinent)->count(2)->create();
+    CountryFactory::new()->forContinent(Continent::EUROPE)->count(3)->create();
+    CountryFactory::new()->forContinent(Continent::ASIA)->count(2)->create();
 
-    $europeCountries = $countryService->getCountriesByContinent($europeContinent, false);
+    $europeCountries = $countryService->getCountriesByContinent(Continent::EUROPE, false);
     expect($europeCountries)->toBeInstanceOf(Collection::class)
         ->and($europeCountries)->toHaveCount(3)
-        ->and($europeCountries->every(fn (Country $country): bool => $country->continent_code === $europeContinent->value))->toBeTrue();
+        ->and($europeCountries->every(fn (Country $country): bool => $country->continent_code === Continent::EUROPE))->toBeTrue();
 
     $antarcticaCountries = $countryService->getCountriesByContinent(Continent::ANTARCTICA, false);
     expect($antarcticaCountries)->toBeInstanceOf(Collection::class)
         ->and($antarcticaCountries)->toBeEmpty();
 });
 
-test('getCountriesByContinent uses cache', function (): void {
+it('return correct countries by continent uses cache', function (): void {
     $countryService = new CountryService;
     $europeContinent = Continent::EUROPE;
     CountryFactory::new()->forContinent($europeContinent)->count(2)->create();
@@ -146,11 +144,11 @@ test('getCountriesByContinent uses cache', function (): void {
             $data = $closure();
             expect($data)->toBeInstanceOf(Collection::class)
                 ->and($data)->toHaveCount(2)
-                ->and($data->every(fn (Country $country): bool => $country->continent_code === $europeContinent->value))->toBeTrue();
+                ->and($data->every(fn (Country $country): bool => $country->continent_code === $europeContinent))->toBeTrue();
 
             return true;
         }))
-        ->andReturn(Country::query()->where('continent_code', $europeContinent->value)->orderBy('name')->get());
+        ->andReturn(Country::query()->where('continent_code', $europeContinent)->orderBy('name')->get());
 
     $foundCountries = $countryService->getCountriesByContinent($europeContinent);
     expect($foundCountries)->toBeInstanceOf(Collection::class)->toHaveCount(2);
@@ -165,7 +163,7 @@ test('getCountriesByContinent uses cache', function (): void {
     expect($notFound)->toBeInstanceOf(Collection::class)->toBeEmpty();
 });
 
-test('findCountryById returns correct country', function (): void {
+it('return correct country by id', function (): void {
     $countryService = new CountryService;
     $country = CountryFactory::new()->create();
     $foundCountry = $countryService->findCountryById($country->id, false);
@@ -176,7 +174,7 @@ test('findCountryById returns correct country', function (): void {
     expect($notFoundCountry)->toBeNull();
 });
 
-test('findCountryById uses cache', function (): void {
+it('return correct country by id uses cache', function (): void {
     $countryService = new CountryService;
     $country = CountryFactory::new()->create();
     $countryId = $country->id;

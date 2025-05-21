@@ -16,7 +16,6 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $name Currency name (e.g., "US Dollar")
  * @property string $code ISO 4217 Alphabetic code (e.g., "USD")
- * @property string|null $iso_numeric ISO 4217 Numeric code (e.g., "840")
  * @property string|null $symbol Currency symbol (e.g., "$")
  * @property int $decimal_places Number of decimal places
  * @property bool $enabled Indicates if the currency is active
@@ -36,7 +35,6 @@ class Currency extends Model
     protected $fillable = [
         'name',
         'code',
-        'iso_numeric',
         'symbol',
         'decimal_places',
         'enabled',

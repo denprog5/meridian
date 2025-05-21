@@ -11,21 +11,16 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
 
-afterEach(function (): void {
-    Mockery::close();
-});
-
-test('getAllCurrencies returns all currencies', function (): void {
+it('returns all currencies', function (): void {
     CurrencyFactory::new()->count(5)->create();
-    $service = new CurrencyService();
-    $currencies = $service->getAllCurrencies(false);
+
+    $currencies = (new CurrencyService())->all(false);
     expect($currencies)->toBeInstanceOf(Collection::class)
         ->and($currencies)->toHaveCount(5);
 });
 
-test('getAllCurrencies uses cache', function (): void {
+it('returns all currencies from cache', function (): void {
     CurrencyFactory::new()->count(3)->create();
-    $service = new CurrencyService();
 
     Cache::shouldReceive('remember')
         ->once()
@@ -37,24 +32,23 @@ test('getAllCurrencies uses cache', function (): void {
         }))
         ->andReturn(Currency::query()->orderBy('name')->get());
 
-    expect($service->getAllCurrencies())
+    expect((new CurrencyService())->all())
         ->toBeInstanceOf(Collection::class)
         ->toHaveCount(3);
 });
 
-test('findCurrencyById returns correct currency', function (): void {
+it('returns currency by id', function (): void {
     $service = new CurrencyService();
     $currency = CurrencyFactory::new()->create();
 
-    $foundCurrency = $service->findCurrencyById($currency->id, false);
+    $foundCurrency = $service->findById($currency->id, false);
     expect($foundCurrency)->toBeInstanceOf(Currency::class)
         ->and($foundCurrency->id)->toBe($currency->id);
 
-    $notFoundCurrency = $service->findCurrencyById(99999, false);
-    expect($notFoundCurrency)->toBeNull();
+    expect($service->findById(99999, false))->toBeNull();
 });
 
-test('findCurrencyById uses cache', function (): void {
+it('returns currency by id from cache', function (): void {
     $service = new CurrencyService();
     $currency = CurrencyFactory::new()->create();
     $currencyId = $currency->id;
@@ -63,14 +57,16 @@ test('findCurrencyById uses cache', function (): void {
         ->once()
         ->with('currency.id.'.$currencyId, Mockery::any(), Mockery::on(function ($closure) use ($currencyId): bool {
             $data = $closure();
-            expect($data)->toBeInstanceOf(Currency::class)->and($data->id)->toBe($currencyId);
+            expect($data)->toBeInstanceOf(Currency::class)
+                ->and($data->id)->toBe($currencyId);
 
             return true;
         }))
         ->andReturn(Currency::query()->find($currencyId));
 
-    $foundCurrency = $service->findCurrencyById($currencyId);
-    expect($foundCurrency)->toBeInstanceOf(Currency::class)->and($foundCurrency->id)->toBe($currencyId);
+    $foundCurrency = $service->findById($currencyId);
+    expect($foundCurrency)->toBeInstanceOf(Currency::class)
+        ->and($foundCurrency->id)->toBe($currencyId);
 
     $currencyIdNotFound = 12345;
     Cache::shouldReceive('remember')
@@ -78,86 +74,44 @@ test('findCurrencyById uses cache', function (): void {
         ->with('currency.id.'.$currencyIdNotFound, Mockery::any(), Mockery::any())
         ->andReturnNull();
 
-    $notFound = $service->findCurrencyById($currencyIdNotFound);
-    expect($notFound)->toBeNull();
+    expect($service->findById($currencyIdNotFound))->toBeNull();
 });
 
-test('findCurrencyByIsoAlphaCode returns correct currency', function (): void {
+it('returns currency by code', function (): void {
     $service = new CurrencyService();
-    $currency = CurrencyFactory::new()->create(['iso_alpha_code' => 'XYZ']);
+    $currency = CurrencyFactory::new()->create(['code' => 'XYZ']);
 
-    $foundCurrency = $service->findCurrencyByIsoAlphaCode('XYZ', false);
+    $foundCurrency = $service->findByCode('XYZ', false);
     expect($foundCurrency)->toBeInstanceOf(Currency::class)
-        ->and($foundCurrency->iso_alpha_code)->toBe('XYZ');
+        ->and($foundCurrency->code)->toBe($currency->code);
 
-    $notFoundCurrency = $service->findCurrencyByIsoAlphaCode('ABC', false);
-    expect($notFoundCurrency)->toBeNull();
+    expect($service->findByCode('ABC', false))->toBeNull();
 });
 
-test('findCurrencyByIsoAlphaCode uses cache', function (): void {
+it('returns currency by code uses cache', function (): void {
     $service = new CurrencyService();
-    $isoAlphaCode = 'TST';
-    CurrencyFactory::new()->create(['iso_alpha_code' => $isoAlphaCode]);
+    $currencyCode = 'USD';
+    CurrencyFactory::new()->create(['code' => $currencyCode]);
 
     Cache::shouldReceive('remember')
         ->once()
-        ->with('currency.iso_alpha_code.'.$isoAlphaCode, Mockery::any(), Mockery::on(function ($closure) use ($isoAlphaCode): bool {
+        ->with('currency.code.'.$currencyCode, Mockery::any(), Mockery::on(function ($closure) use ($currencyCode): bool {
             $data = $closure();
-            expect($data)->toBeInstanceOf(Currency::class)->and($data->iso_alpha_code)->toBe($isoAlphaCode);
+            expect($data)->toBeInstanceOf(Currency::class)->and($data->code)->toBe($currencyCode);
 
             return true;
         }))
-        ->andReturn(Currency::query()->where('iso_alpha_code', $isoAlphaCode)->first());
+        ->andReturn(Currency::query()->where('code', $currencyCode)->first());
 
-    $foundCurrency = $service->findCurrencyByIsoAlphaCode($isoAlphaCode);
-    expect($foundCurrency)->toBeInstanceOf(Currency::class)->and($foundCurrency->iso_alpha_code)->toBe($isoAlphaCode);
-
-    $isoAlphaCodeNotFound = 'NFD';
-    Cache::shouldReceive('remember')
-        ->once()
-        ->with('currency.iso_alpha_code.'.$isoAlphaCodeNotFound, Mockery::any(), Mockery::any())
-        ->andReturnNull();
-
-    $notFound = $service->findCurrencyByIsoAlphaCode($isoAlphaCodeNotFound);
-    expect($notFound)->toBeNull();
-});
-
-test('findCurrencyByIsoNumericCode returns correct currency', function (): void {
-    $service = new CurrencyService();
-    $currency = CurrencyFactory::new()->create(['iso_numeric_code' => '999']);
-
-    $foundCurrency = $service->findCurrencyByIsoNumericCode('999', false);
+    $foundCurrency = $service->findByCode($currencyCode);
     expect($foundCurrency)->toBeInstanceOf(Currency::class)
-        ->and($foundCurrency->iso_numeric_code)->toBe('999');
+        ->and($foundCurrency->code)->toBe($currencyCode);
 
-    $notFoundCurrency = $service->findCurrencyByIsoNumericCode('000', false);
-    expect($notFoundCurrency)->toBeNull();
-});
-
-test('findCurrencyByIsoNumericCode uses cache', function (): void {
-    $service = new CurrencyService();
-    $isoNumericCode = '888';
-    CurrencyFactory::new()->create(['iso_numeric_code' => $isoNumericCode]);
-
+    $currencyCodeNotFound = 'NFD';
     Cache::shouldReceive('remember')
         ->once()
-        ->with('currency.iso_numeric_code.'.$isoNumericCode, Mockery::any(), Mockery::on(function ($closure) use ($isoNumericCode): bool {
-            $data = $closure();
-            expect($data)->toBeInstanceOf(Currency::class)->and($data->iso_numeric_code)->toBe($isoNumericCode);
-
-            return true;
-        }))
-        ->andReturn(Currency::query()->where('iso_numeric_code', $isoNumericCode)->first());
-
-    $foundCurrency = $service->findCurrencyByIsoNumericCode($isoNumericCode);
-    expect($foundCurrency)->toBeInstanceOf(Currency::class)->and($foundCurrency->iso_numeric_code)->toBe($isoNumericCode);
-
-    $isoNumericCodeNotFound = '111';
-    Cache::shouldReceive('remember')
-        ->once()
-        ->with('currency.iso_numeric_code.'.$isoNumericCodeNotFound, Mockery::any(), Mockery::any())
+        ->with('currency.code.'.$currencyCodeNotFound, Mockery::any(), Mockery::any())
         ->andReturnNull();
 
-    $notFound = $service->findCurrencyByIsoNumericCode($isoNumericCodeNotFound);
-    expect($notFound)->toBeNull();
+    expect($service->findByCode($currencyCodeNotFound))->toBeNull();
 });

@@ -36,6 +36,7 @@ class CurrencySeeder extends Seeder
 
             return;
         }
+
         $currenciesArray = json_decode($jsonData, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -65,7 +66,6 @@ class CurrencySeeder extends Seeder
                 [
                     'code' => $currencyData['code'],
                     'name' => $currencyData['name'],
-                    'iso_numeric' => null,
                     'symbol' => $currencyData['symbol'],
                     'decimal_places' => $currencyData['decimal_digits'],
                     'enabled' => true,

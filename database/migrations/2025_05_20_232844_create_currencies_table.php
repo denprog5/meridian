@@ -17,7 +17,6 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('code', 3)->unique(); // ISO 4217 Alphabetic code
-            $table->string('iso_numeric', 3)->unique()->nullable(); // ISO 4217 Numeric code
             $table->string('symbol', 5)->nullable();
             $table->unsignedTinyInteger('decimal_places')->default(2);
             $table->boolean('enabled')->default(true);

@@ -36,7 +36,7 @@ class CountryService
      * @param  bool  $useCache  Whether to use cache.
      * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
      */
-    public function findCountryByIsoAlpha2Code(string $isoAlpha2Code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
+    public function findByIsoAlpha2Code(string $isoAlpha2Code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
     {
         $cacheKey = 'country.iso_alpha_2.'.mb_strtoupper($isoAlpha2Code);
         if ($useCache) {

@@ -29,7 +29,6 @@ class CurrencyFactory extends Factory
         return [
             'name' => fake()->unique()->words(2, true),
             'code' => fake()->unique()->currencyCode(),
-            'iso_numeric' => fake()->optional(0.8)->unique()->numerify(),
             'symbol' => fake()->optional(0.9)->randomElement(['$', '€', '£', '¥', '₹', 'CHF', 'kr', 'zł']),
             'decimal_places' => fake()->randomElement([0, 2, 3]),
             'enabled' => fake()->boolean(90),

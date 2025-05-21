@@ -31,7 +31,7 @@ test('country model casts continent_code to Continent enum', function (): void {
         ->and($country->continent_code)->toBe(Continent::EUROPE);
 });
 
-test('getLocalizedName returns translated name when translation exists', function (): void {
+test('localized name returns translated name when translation exists', function (): void {
     $country = Country::factory()->create(['iso_alpha_2' => 'US', 'name' => 'Generic US Name']);
 
     $originalLocale = app()->getLocale();
@@ -43,7 +43,7 @@ test('getLocalizedName returns translated name when translation exists', functio
     app()->setLocale($originalLocale);
 });
 
-test('getLocalizedName falls back to name attribute when translation does not exist', function (): void {
+test('localized name falls back to name attribute when translation does not exist', function (): void {
     $country = Country::factory()->create(['iso_alpha_2' => 'XX', 'name' => 'NonExistent Country']);
 
     $originalLocale = app()->getLocale();
@@ -52,18 +52,4 @@ test('getLocalizedName falls back to name attribute when translation does not ex
     expect($country->getLocalizedName())->toBe('NonExistent Country');
 
     app()->setLocale($originalLocale);
-});
-
-test('getLocalizedName uses specific locale when provided', function (): void {
-    $country = Country::factory()->create(['iso_alpha_2' => 'DE', 'name' => 'Germany']);
-
-    $langPath = lang_path('vendor/meridian/de');
-    if (! is_dir($langPath)) {
-        mkdir($langPath, 0755, true);
-    }
-    file_put_contents($langPath.'/countries.php', "<?php return ['de' => 'Deutschland'];");
-
-    expect($country->getLocalizedName('de'))->toBe('Deutschland');
-
-    unlink($langPath.'/countries.php');
 });

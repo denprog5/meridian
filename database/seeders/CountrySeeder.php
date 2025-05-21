@@ -9,7 +9,6 @@ use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
 use Exception;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -44,79 +43,52 @@ class CountrySeeder extends Seeder
         }
 
         if (empty($allCountriesData) || ! is_array($allCountriesData)) {
-            $this->logAndOutput('countries.json is empty. No countries to seed.');
+            $this->logAndOutput('countries.json is empty or not an array. No countries to seed.');
 
             return;
         }
 
         $this->startProgress(count($allCountriesData));
 
-        foreach ($allCountriesData as $countryJson) {
-            if (! is_array($countryJson) && ! ($countryJson instanceof ArrayAccess)) {
+        foreach ($allCountriesData as $countryData) {
+            if (! is_array($countryData) && ! ($countryData instanceof ArrayAccess)) {
+                 $this->logAndOutput('Skipping invalid country data entry.', 'warning');
                 continue;
             }
+
+            // Direct mapping from the new JSON structure
             $dataToSeed = [
-                'name' => data_get($countryJson, 'name.common'),
-                'official_name' => data_get($countryJson, 'name.official'),
-                'native_name' => null,
-                'iso_alpha_2' => data_get($countryJson, 'cca2'),
-                'iso_alpha_3' => data_get($countryJson, 'cca3'),
-                'iso_numeric' => data_get($countryJson, 'ccn3'),
-                'phone_code' => null,
+                'name' => $countryData['name'] ?? null,
+                'official_name' => $countryData['official_name'] ?? null,
+                'native_name' => $countryData['native_name'] ?? null,
+                'iso_alpha_2' => $countryData['iso_alpha_2'] ?? null,
+                'iso_alpha_3' => $countryData['iso_alpha_3'] ?? null,
+                'iso_numeric' => $countryData['iso_numeric'] ?? null,
+                'phone_code' => $countryData['phone_code'] ?? null,
+                'continent_code' => $countryData['continent_code'] ?? null,
             ];
 
-            $nativeNames = data_get($countryJson, 'name.native', []);
-            if (! empty($nativeNames) && is_array($nativeNames)) {
-                $firstNative = Arr::first($nativeNames);
-                if (is_array($firstNative)) {
-                    $dataToSeed['native_name'] = data_get($firstNative, 'official');
+            // Basic validation for essential fields
+            if (empty($dataToSeed['name']) || empty($dataToSeed['iso_alpha_2'])) {
+                $this->logAndOutput('Skipping country due to missing name or iso_alpha_2.', 'warning');
+                $this->advanceProgress(); // Still advance progress for skipped items
+                continue;
+            }
+
+            // Ensure continent_code is valid or null if not set
+            if (isset($dataToSeed['continent_code']) && !empty($dataToSeed['continent_code'])) {
+                if (!Continent::tryFrom($dataToSeed['continent_code'])) {
+                    $this->logAndOutput(
+                        "Invalid continent_code '{$dataToSeed['continent_code']}' for country {$dataToSeed['name']}. Setting to null.",
+                        'warning'
+                    );
+                    $dataToSeed['continent_code'] = null;
                 }
+            } else {
+                 $dataToSeed['continent_code'] = null;
             }
 
-            $region = data_get($countryJson, 'region');
-            $subregion = data_get($countryJson, 'subregion');
-            if (! is_string($subregion)) {
-                $subregion = '';
-            }
-
-            switch ($region) {
-                case 'Africa':
-                    $dataToSeed['continent_code'] = Continent::AFRICA->value;
-                    break;
-                case 'Americas':
-                    if (str_contains($subregion, 'South America')) {
-                        $dataToSeed['continent_code'] = Continent::SOUTH_AMERICA->value;
-                    } else {
-                        $dataToSeed['continent_code'] = Continent::NORTH_AMERICA->value;
-                    }
-                    break;
-                case 'Asia':
-                    $dataToSeed['continent_code'] = Continent::ASIA->value;
-                    break;
-                case 'Europe':
-                    $dataToSeed['continent_code'] = Continent::EUROPE->value;
-                    break;
-                case 'Oceania':
-                    $dataToSeed['continent_code'] = Continent::OCEANIA->value;
-                    break;
-                case 'Antarctic':
-                    $dataToSeed['continent_code'] = Continent::ANTARCTICA->value;
-                    break;
-            }
-
-            $root = data_get($countryJson, 'idd.root');
-            $suffixes = data_get($countryJson, 'idd.suffixes', []);
-
-            if (is_string($root) && is_array($suffixes)) {
-                $validSuffixes = collect($suffixes)
-                    ->filter(fn ($suffix): bool => is_string($suffix))
-                    /** @phpstan-ignore-next-line */
-                    ->map(fn ($suffix): string => $root.$suffix)
-                    ->all();
-                $dataToSeed['phone_code'] = empty($validSuffixes) ? $root : implode(',', $validSuffixes);
-            }
-
-            Country::query()->updateOrCreate(['iso_alpha_2' => $dataToSeed['iso_alpha_2']], $dataToSeed);
+            Country::query()->updateOrCreate($dataToSeed);
 
             $this->advanceProgress();
         }

@@ -38,5 +38,5 @@ it('populates the database using CountrySeeder', function (): void {
     $germany = Country::query()->where('iso_alpha_2', 'DE')->first();
     expect($germany)->not->toBeNull()
         ->and($germany->name)->toBe('Germany')
-        ->and(Country::query()->count())->toBe(250);
+        ->and(Country::query()->count())->toBe(245);
 });

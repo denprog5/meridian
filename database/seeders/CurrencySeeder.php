@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Denprog\Meridian\Database\Seeders;
 
 use Denprog\Meridian\Models\Currency;
+use Exception;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 
 class CurrencySeeder extends Seeder
 {
@@ -19,74 +21,52 @@ class CurrencySeeder extends Seeder
             $this->command->line('Seeding currencies quietly...');
         }
 
-        $currencies = [
-            [
-                'name' => 'US Dollar',
-                'code' => 'USD',
-                'iso_numeric' => '840',
-                'symbol' => '$',
-                'decimal_places' => 2,
-                'enabled' => true,
-            ],
-            [
-                'name' => 'Euro',
-                'code' => 'EUR',
-                'iso_numeric' => '978',
-                'symbol' => '€',
-                'decimal_places' => 2,
-                'enabled' => true,
-            ],
-            [
-                'name' => 'British Pound',
-                'code' => 'GBP',
-                'iso_numeric' => '826',
-                'symbol' => '£',
-                'decimal_places' => 2,
-                'enabled' => true,
-            ],
-            [
-                'name' => 'Japanese Yen',
-                'code' => 'JPY',
-                'iso_numeric' => '392',
-                'symbol' => '¥',
-                'decimal_places' => 0,
-                'enabled' => true,
-            ],
-            [
-                'name' => 'Canadian Dollar',
-                'code' => 'CAD',
-                'iso_numeric' => '124',
-                'symbol' => 'CA$',
-                'decimal_places' => 2,
-                'enabled' => true,
-            ],
-            [
-                'name' => 'Australian Dollar',
-                'code' => 'AUD',
-                'iso_numeric' => '036',
-                'symbol' => 'AU$',
-                'decimal_places' => 2,
-                'enabled' => true,
-            ],
-            [
-                'name' => 'Swiss Franc',
-                'code' => 'CHF',
-                'iso_numeric' => '756',
-                'symbol' => 'CHF',
-                'decimal_places' => 2,
-                'enabled' => true,
-            ],
-        ];
+        $jsonPath = __DIR__ . '/../../resources/currencies.json';
+
+        if (!File::exists($jsonPath)) {
+            $this->command->error('currencies.json not found at ' . $jsonPath);
+            return;
+        }
+
+        try {
+            $jsonData = File::get($jsonPath);
+        } catch (Exception $e) {
+            $this->command->error('Error reading currencies.json: ' . $e->getMessage());
+            return;
+        }
+        $currenciesArray = json_decode($jsonData, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->command->error('Error decoding currencies.json: ' . json_last_error_msg());
+            return;
+        }
+
+        if (empty($currenciesArray) || ! is_array($currenciesArray)) {
+            $this->command->warn('No currencies found in currencies.json or the file is empty.');
+            return;
+        }
 
         $tableName = (new Currency())->getTable();
         DB::table($tableName)->truncate();
 
         if (! $this->command->getOutput()->isQuiet()) {
-            $this->command->getOutput()->progressStart(count($currencies));
+            $this->command->getOutput()->progressStart(count($currenciesArray));
         }
 
-        foreach ($currencies as $currencyData) {
-            Currency::query()->updateOrCreate(['code' => $currencyData['code']], $currencyData);
+        foreach ($currenciesArray as $currencyData) {
+            if (! is_array($currencyData)) {
+                continue;
+            }
+            Currency::query()->updateOrCreate(
+                [
+                    'code' => $currencyData['code'],
+                    'name' => $currencyData['name'],
+                    'iso_numeric' => null,
+                    'symbol' => $currencyData['symbol'],
+                    'decimal_places' => $currencyData['decimal_digits'],
+                    'enabled' => true,
+                ]
+            );
             if (! $this->command->getOutput()->isQuiet()) {
                 $this->command->getOutput()->progressAdvance();
             }
@@ -95,6 +75,6 @@ class CurrencySeeder extends Seeder
         if (! $this->command->getOutput()->isQuiet()) {
             $this->command->getOutput()->progressFinish();
         }
-        $this->command->info('Currencies seeded successfully.');
+        $this->command->info(count($currenciesArray) . ' currencies seeded successfully from JSON.');
     }
 }

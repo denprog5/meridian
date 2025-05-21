@@ -29,6 +29,20 @@ class Currency extends Model
     use HasFactory;
 
     /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'code',
+        'iso_numeric',
+        'symbol',
+        'decimal_places',
+        'enabled',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

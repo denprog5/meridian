@@ -141,17 +141,14 @@ class CountrySeeder extends Seeder
             default => Log::info($logMessage),
         };
 
-        /** @phpstan-ignore-next-line */
-        if ($this->command) {
-            $consoleOutputStyle = $consoleStyle ?? $logLevel;
-            if ($consoleOutputStyle === 'warning') {
-                $consoleOutputStyle = 'warn';
-            }
-            if (method_exists($this->command, $consoleOutputStyle)) {
-                $this->command->{$consoleOutputStyle}($message);
-            } else {
-                $this->command->line($message);
-            }
+        $consoleOutputStyle = $consoleStyle ?? $logLevel;
+        if ($consoleOutputStyle === 'warning') {
+            $consoleOutputStyle = 'warn';
+        }
+        if (method_exists($this->command, $consoleOutputStyle)) {
+            $this->command->{$consoleOutputStyle}($message);
+        } else {
+            $this->command->line($message);
         }
     }
 
@@ -160,8 +157,7 @@ class CountrySeeder extends Seeder
      */
     protected function startProgress(int $total): void
     {
-        /** @phpstan-ignore-next-line */
-        $this->command?->getOutput()->progressStart($total);
+        $this->command->getOutput()->progressStart($total);
     }
 
     /**
@@ -169,8 +165,7 @@ class CountrySeeder extends Seeder
      */
     protected function advanceProgress(): void
     {
-        /** @phpstan-ignore-next-line */
-        $this->command?->getOutput()->progressAdvance();
+        $this->command->getOutput()->progressAdvance();
     }
 
     /**
@@ -178,7 +173,6 @@ class CountrySeeder extends Seeder
      */
     protected function finishProgress(): void
     {
-        /** @phpstan-ignore-next-line */
-        $this->command?->getOutput()->progressFinish();
+        $this->command->getOutput()->progressFinish();
     }
 }

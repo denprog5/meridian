@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
+use Denprog\Meridian\Models\Currency;
 
 test('country model has correct fillable attributes', function (): void {
     $country = Country::factory()->create();
@@ -53,4 +54,21 @@ test('localized name falls back to name attribute when translation does not exis
     expect($country->getLocalizedName())->toBe('NonExistent Country');
 
     app()->setLocale($originalLocale);
+});
+
+test('country have currency', function (): void {
+    Currency::factory()->create(['code' => 'EUR']);
+    $country = Country::factory()->create(['iso_alpha_2' => 'DE', 'name' => 'Germany', 'currency_code' => 'EUR']);
+
+    expect($country->currency)->toBeInstanceOf(Currency::class)
+        ->and($country->currency->code)->toBe('EUR');
+});
+
+test('country does not have currency', function (): void {
+    Currency::factory()->create(['code' => 'USD']);
+    $country = Country::factory()->create(['currency_code' => 'EUR']);
+    $countryNoCurrency = Country::factory()->create(['currency_code' => null]);
+
+    expect($country->currency)->toBeNull()
+        ->and($countryNoCurrency->currency)->toBeNull();
 });

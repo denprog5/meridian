@@ -18,7 +18,6 @@ test('Currencies facade proxies getAllCurrencies to service', function (): void 
 
     Currencies::shouldReceive('getAllCurrencies')
         ->once()
-        ->with(true, 60)
         ->andReturn($expectedCurrencies);
 
     $result = Currencies::getAllCurrencies();
@@ -31,7 +30,7 @@ test('Currencies facade proxies findCurrencyById to service', function (): void 
 
     Currencies::shouldReceive('findCurrencyById')
         ->once()
-        ->with(1, true, 60)
+        ->with(1)
         ->andReturn($expectedCurrency);
 
     $result = Currencies::findCurrencyById(1);
@@ -44,7 +43,7 @@ test('Currencies facade proxies findCurrencyByIsoAlphaCode to service', function
 
     Currencies::shouldReceive('findCurrencyByIsoAlphaCode')
         ->once()
-        ->with('TSD', true, 60)
+        ->with('TSD')
         ->andReturn($expectedCurrency);
 
     $result = Currencies::findCurrencyByIsoAlphaCode('TSD');
@@ -57,7 +56,7 @@ test('Currencies facade proxies findCurrencyByIsoNumericCode to service', functi
 
     Currencies::shouldReceive('findCurrencyByIsoNumericCode')
         ->once()
-        ->with('999', true, 60)
+        ->with('999')
         ->andReturn($expectedCurrency);
 
     $result = Currencies::findCurrencyByIsoNumericCode('999');

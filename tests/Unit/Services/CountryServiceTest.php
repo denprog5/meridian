@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace Denprog\Meridian\Tests\Unit\Services;
 
 use Denprog\Meridian\Database\Factories\CountryFactory;
+use Denprog\Meridian\Database\Factories\CurrencyFactory;
 use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
+use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Services\CountryService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
+
+uses(RefreshDatabase::class);
 
 it('return all countries', function (): void {
     CountryFactory::new()->count(5)->create();
@@ -200,4 +205,26 @@ it('return correct country by id uses cache', function (): void {
 
     $notFound = $countryService->findCountryById($countryIdNotFound);
     expect($notFound)->toBeNull();
+});
+
+it('retrieves a country with its currency relationship', function (): void {
+    // Arrange
+    $currency = CurrencyFactory::new()->create();
+    $country = CountryFactory::new()->create([
+        'currency_code' => $currency->code,
+    ]);
+    $countryService = new CountryService();
+
+    // Act: Retrieve the country using a service method (e.g., findByIsoAlpha2Code)
+    // We test without cache for simplicity here, as other tests cover caching.
+    $foundCountry = $countryService->findByIsoAlpha2Code($country->iso_alpha_2, false);
+
+    // Assert
+    expect($foundCountry)->toBeInstanceOf(Country::class)
+        ->and($foundCountry->id)->toBe($country->id)
+        ->and($foundCountry->currency)->not->toBeNull()
+        ->and($foundCountry->currency)->toBeInstanceOf(Currency::class)
+        ->and($foundCountry->currency_code)->toBe($currency->code) // Check the foreign key on Country
+        ->and($foundCountry->currency->id)->toBe($currency->id)   // Check the ID of the related Currency
+        ->and($foundCountry->currency->name)->toBe($currency->name); // Check a property of the related Currency
 });

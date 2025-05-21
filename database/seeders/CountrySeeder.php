@@ -46,7 +46,10 @@ class CountrySeeder extends Seeder
                 }
                 $countryData['continent_code'] = $continent->value;
             }
-            Country::query()->updateOrCreate($countryData);
+            Country::query()->updateOrCreate(
+                ['iso_alpha_2' => $countryData['iso_alpha_2']],
+                $countryData
+            );
         }
     }
 }

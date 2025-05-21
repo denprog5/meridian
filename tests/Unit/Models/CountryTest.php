@@ -18,6 +18,7 @@ test('country model has correct fillable attributes', function (): void {
             'iso_alpha_3',
             'iso_numeric',
             'phone_code',
+            'currency_code',
             'updated_at',
             'created_at',
             'id',

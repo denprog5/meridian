@@ -9,6 +9,7 @@ use Denprog\Meridian\Enums\Continent;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -23,8 +24,11 @@ use Illuminate\Support\Carbon;
  * @property string $iso_alpha_3 ISO 3166-1 alpha-3 code
  * @property string|null $iso_numeric ISO 3166-1 numeric code
  * @property string|null $phone_code International phone calling code(s), comma-separated if multiple
+ * @property string|null $currency_code ISO 4217 currency code
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Continent $continent The continent enum instance.
+ * @property-read Currency|null $currency The currency of the country.
  */
 class Country extends Model
 {
@@ -45,6 +49,7 @@ class Country extends Model
         'iso_numeric',
         'phone_code',
         'continent_code',
+        'currency_code',
     ];
 
     /**
@@ -63,6 +68,16 @@ class Country extends Model
         }
 
         return $translated;
+    }
+
+    /**
+     * Get the currency of the country.
+     *
+     * @return BelongsTo<Currency, $this>
+     */
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class, 'currency_code', 'code');
     }
 
     /**

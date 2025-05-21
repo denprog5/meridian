@@ -8,6 +8,7 @@ use Denprog\Meridian\Database\Factories\CurrencyFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property bool $enabled Indicates if the currency is active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Country>|Country[] $countries The countries that use this currency.
  */
 class Currency extends Model
 {
@@ -39,6 +41,16 @@ class Currency extends Model
         'decimal_places',
         'enabled',
     ];
+
+    /**
+     * Get the countries that use this currency.
+     *
+     * @return HasMany<Country>
+     */
+    public function countries(): HasMany
+    {
+        return $this->hasMany(Country::class, 'currency_code', 'code');
+    }
 
     /**
      * Create a new factory instance for the model.

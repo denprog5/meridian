@@ -9,7 +9,7 @@ use Denprog\Meridian\Models\Currency;
 use Illuminate\Database\Eloquent\Collection;
 use Mockery;
 
-afterEach(function () {
+afterEach(function (): void {
     Mockery::close();
 });
 

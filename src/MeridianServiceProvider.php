@@ -70,9 +70,9 @@ class MeridianServiceProvider extends BaseServiceProvider
             ], 'meridian-migrations');
 
             // Optionally, publish language files
-             $this->publishes([
-                 $this->basePath.'/lang' => lang_path('vendor/meridian'),
-             ], 'meridian-lang');
+            $this->publishes([
+                $this->basePath.'/lang' => lang_path('vendor/meridian'),
+            ], 'meridian-lang');
         }
 
         // Load translations if they exist

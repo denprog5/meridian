@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
-use Denprog\Meridian\Contracts\ExchangeRateProvider as ExchangeRateProviderContract;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\ExchangeRate;
-use Denprog\Meridian\Providers\FrankfurterAppProvider;
 use Denprog\Meridian\Services\ExchangeRateService;
 use Illuminate\Support\Facades\Config;
 

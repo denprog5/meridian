@@ -9,7 +9,15 @@ use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Services\CurrencyService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Mockery;
+
+beforeEach(function (): void {
+    Config::set('meridian.base_currency_code', 'USD');
+    Config::set('meridian.active_currency_codes', ['USD', 'EUR', 'GBP']);
+    Config::set('meridian.display_currency_session_key', 'meridian.user_display_currency');
+    Config::set('meridian.cache_duration_days.currencies', 1);
+});
 
 it('returns all currencies', function (): void {
     CurrencyFactory::new()->count(5)->create();
@@ -38,18 +46,18 @@ it('returns all currencies from cache', function (): void {
 });
 
 it('returns currency by id', function (): void {
-    $service = new CurrencyService();
+    $currencyService = new CurrencyService();
     $currency = CurrencyFactory::new()->create();
 
-    $foundCurrency = $service->findById($currency->id, false);
+    $foundCurrency = $currencyService->findById($currency->id, false);
     expect($foundCurrency)->toBeInstanceOf(Currency::class)
         ->and($foundCurrency->id)->toBe($currency->id);
 
-    expect($service->findById(99999, false))->toBeNull();
+    expect($currencyService->findById(99999, false))->toBeNull();
 });
 
 it('returns currency by id from cache', function (): void {
-    $service = new CurrencyService();
+    $currencyService = new CurrencyService();
     $currency = CurrencyFactory::new()->create();
     $currencyId = $currency->id;
 
@@ -64,7 +72,7 @@ it('returns currency by id from cache', function (): void {
         }))
         ->andReturn(Currency::query()->find($currencyId));
 
-    $foundCurrency = $service->findById($currencyId);
+    $foundCurrency = $currencyService->findById($currencyId);
     expect($foundCurrency)->toBeInstanceOf(Currency::class)
         ->and($foundCurrency->id)->toBe($currencyId);
 
@@ -74,24 +82,24 @@ it('returns currency by id from cache', function (): void {
         ->with('currency.id.'.$currencyIdNotFound, Mockery::any(), Mockery::any())
         ->andReturnNull();
 
-    expect($service->findById($currencyIdNotFound))->toBeNull();
+    expect($currencyService->findById($currencyIdNotFound))->toBeNull();
 });
 
 it('returns currency by code', function (): void {
-    $service = new CurrencyService();
+    $currencyService = new CurrencyService();
     $currency = CurrencyFactory::new()->create(['code' => 'XYZ']);
 
-    $foundCurrency = $service->findByCode('XYZ', false);
+    $foundCurrency = $currencyService->findByCode('XYZ', false);
     expect($foundCurrency)->toBeInstanceOf(Currency::class)
         ->and($foundCurrency->code)->toBe($currency->code);
 
-    expect($service->findByCode('ABC', false))->toBeNull();
+    expect($currencyService->findByCode('ABC', false))->toBeNull();
 });
 
 it('returns currency by code uses cache', function (): void {
-    $service = new CurrencyService();
+    $currencyService = new CurrencyService();
     $currencyCode = 'USD';
-    CurrencyFactory::new()->create(['code' => $currencyCode]);
+    CurrencyFactory::new()->create(['code' => $currencyCode, 'enabled' => true]);
 
     Cache::shouldReceive('remember')
         ->once()
@@ -103,7 +111,7 @@ it('returns currency by code uses cache', function (): void {
         }))
         ->andReturn(Currency::query()->where('code', $currencyCode)->first());
 
-    $foundCurrency = $service->findByCode($currencyCode);
+    $foundCurrency = $currencyService->findByCode($currencyCode);
     expect($foundCurrency)->toBeInstanceOf(Currency::class)
         ->and($foundCurrency->code)->toBe($currencyCode);
 
@@ -113,5 +121,5 @@ it('returns currency by code uses cache', function (): void {
         ->with('currency.code.'.$currencyCodeNotFound, Mockery::any(), Mockery::any())
         ->andReturnNull();
 
-    expect($service->findByCode($currencyCodeNotFound))->toBeNull();
+    expect($currencyService->findByCode($currencyCodeNotFound))->toBeNull();
 });

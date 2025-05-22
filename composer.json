@@ -27,7 +27,10 @@
             "Denprog\\Meridian\\": "src/",
             "Denprog\\Meridian\\Database\\Factories\\": "database/factories/",
             "Denprog\\Meridian\\Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

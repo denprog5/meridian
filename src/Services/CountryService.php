@@ -8,9 +8,84 @@ use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class CountryService
 {
+    public const string SESSION_KEY_USER_COUNTRY = 'meridian.user_country_iso_alpha_2';
+
+    private ?Country $defaultCountry = null;
+
+    private ?Country $country = null;
+
+    /**
+     * Get the user's selected country from the session.
+     *
+     * @return Country The Country model if set and valid, otherwise null.
+     */
+    public function get(): Country
+    {
+        if ($this->country instanceof Country) {
+            return $this->country;
+        }
+
+        $countryIsoCode = Session::get(self::SESSION_KEY_USER_COUNTRY);
+
+        if (empty($countryIsoCode) || ! is_string($countryIsoCode)) {
+            $this->country = $this->default();
+
+            return $this->country;
+        }
+
+        $country = $this->findByIsoAlpha2Code($countryIsoCode);
+
+        if (! $country instanceof Country) {
+            $country = $this->default();
+        }
+
+        $this->country = $country;
+
+        return $country;
+    }
+
+    /**
+     * Set the user's selected country in the session.
+     *
+     * @param  string  $countryIsoAlpha2Code  The ISO Alpha-2 code of the country.
+     */
+    public function set(string $countryIsoAlpha2Code): void
+    {
+        $countryIsoAlpha2Code = mb_strtoupper($countryIsoAlpha2Code);
+        $country = $this->findByIsoAlpha2Code($countryIsoAlpha2Code, false);
+
+        if (! $country instanceof Country) {
+            Log::warning('Attempt to set user country to non-existent or disabled country.', ['code' => $countryIsoAlpha2Code]);
+
+            return;
+        }
+
+        $this->country = $country;
+        Session::put(self::SESSION_KEY_USER_COUNTRY, $country->iso_alpha_2);
+    }
+
+    /**
+     * Get the default country from configuration.
+     *
+     * @return Country The default Country model if configured and valid, otherwise null.
+     */
+    public function default(): Country
+    {
+        if ($this->defaultCountry instanceof Country) {
+            return $this->defaultCountry;
+        }
+
+        $this->defaultCountry = $this->findByIsoAlpha2Code(Config::string('meridian.default_country_iso_code', 'US'));
+
+        return $this->defaultCountry;
+    }
+
     /**
      * Get all countries, optionally from cache.
      *
@@ -18,7 +93,7 @@ class CountryService
      * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
      * @return Collection<int, Country>
      */
-    public function getAllCountries(bool $useCache = true, int $cacheTtlMinutes = 60): Collection
+    public function all(bool $useCache = true, int $cacheTtlMinutes = 60): Collection
     {
         if ($useCache) {
             /** @var Collection<int, Country> */
@@ -54,7 +129,7 @@ class CountryService
      * @param  bool  $useCache  Whether to use cache.
      * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
      */
-    public function findCountryByIsoAlpha3Code(string $isoAlpha3Code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
+    public function findByIsoAlpha3Code(string $isoAlpha3Code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
     {
         $cacheKey = 'country.iso_alpha_3.'.mb_strtoupper($isoAlpha3Code);
         if ($useCache) {
@@ -73,7 +148,7 @@ class CountryService
      * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
      * @return Collection<int, Country>
      */
-    public function getCountriesByContinent(Continent $continent, bool $useCache = true, int $cacheTtlMinutes = 60): Collection
+    public function findByContinent(Continent $continent, bool $useCache = true, int $cacheTtlMinutes = 60): Collection
     {
         $cacheKey = 'countries.continent.'.$continent->value;
         if ($useCache) {
@@ -92,7 +167,7 @@ class CountryService
      * @param  bool  $useCache  Whether to use cache.
      * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
      */
-    public function findCountryById(int $id, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
+    public function findById(int $id, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
     {
         $cacheKey = 'country.id.'.$id;
         if ($useCache) {

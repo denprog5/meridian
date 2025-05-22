@@ -11,10 +11,10 @@
     ],
     "require": {
         "php": "^8.3.0",
-        "illuminate/support": "^11.44|^12.0"
+        "laravel/framework": "^11.45.0|^12.0"
     },
     "require-dev": {
-        "laravel/pint": "^v1.22.1",
+        "laravel/pint": "^1.22.1",
         "orchestra/testbench": "^10.0",
         "pestphp/pest": "^4.0.0",
         "pestphp/pest-plugin-type-coverage": "^4.0.0",

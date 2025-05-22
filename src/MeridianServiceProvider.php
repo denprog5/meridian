@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian;
 
+use Denprog\Meridian\Commands\InstallCommand;
+use Denprog\Meridian\Commands\UpdateExchangeRatesCommand;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
@@ -50,49 +52,41 @@ class MeridianServiceProvider extends BaseServiceProvider
      */
     public function boot(): void
     {
-        // Configuration is merged in register(), no need to call mergeConfigFrom() here.
+        $this->basePath = dirname(__DIR__);
 
-        // Load translations for the package.
-        $this->loadTranslationsFrom($this->basePath.'/lang', 'meridian');
-
-        // Load migrations for the package.
-        // These migrations will be run automatically when `php artisan migrate` is executed.
         if ($this->app->runningInConsole()) {
-            $this->loadMigrationsFrom($this->basePath.'/database/migrations');
-        }
-
-        // Define assets that can be published by the user.
-        $this->publishableAssets();
-    }
-
-    /**
-     * Define the publishable assets for the package.
-     *
-     * This method groups all publishable assets (configurations, migrations, translations, etc.)
-     * to keep the boot method cleaner.
-     */
-    protected function publishableAssets(): void
-    {
-        if ($this->app->runningInConsole()) {
-            // Publish migrations, allowing users to customize them if needed.
-            $this->publishes([
-                $this->basePath.'/database/migrations' => database_path('migrations'),
-            ], 'meridian-migrations');
-
-            // Publish translation files, allowing users to override them.
-            $this->publishes([
-                $this->basePath.'/lang' => $this->app->langPath('vendor/meridian'),
-            ], 'meridian-translations');
-
-            // Publish the configuration file, allowing users to override default settings.
+            // Publish configuration
             $this->publishes([
                 $this->basePath.'/config/meridian.php' => config_path('meridian.php'),
             ], 'meridian-config');
 
-            // Example for publishing views (if any in the future)
+            // Publish migrations
+            $this->publishes([
+                $this->basePath.'/database/migrations' => database_path('migrations'),
+            ], 'meridian-migrations');
+
+            // Optionally, publish language files
             // $this->publishes([
-            //     $this->basePath . '/resources/views' => resource_path('views/vendor/meridian'),
-            // ], 'meridian-views');
+            //     $this->basePath.'/lang' => lang_path('vendor/meridian'),
+            // ], 'meridian-lang');
+        }
+
+        // Load translations if they exist
+        // $this->loadTranslationsFrom($this->basePath.'/lang', 'meridian');
+
+        $this->registerCommands();
+    }
+
+    /**
+     * Register commands for the package.
+     */
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                InstallCommand::class,
+                UpdateExchangeRatesCommand::class,
+            ]);
         }
     }
 }

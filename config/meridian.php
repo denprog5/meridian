@@ -16,7 +16,7 @@ return [
     | Example: 'USD', 'EUR', 'GBP'.
     |
     */
-    'base_currency_code' => 'EUR',
+    'base_currency_code' => 'USD',
 
     /*
     |--------------------------------------------------------------------------
@@ -83,6 +83,27 @@ return [
             //     'pro_version' => false, // Set to true if using a paid plan for HTTPS
             // ],
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Exchange Rate Providers Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure the API endpoints and any other settings for exchange rate
+    | providers. The 'frankfurter' key is used by default.
+    |
+    */
+    'exchange_rate_providers' => [
+        'frankfurter' => [
+            'api_url' => env('FRANKFURTER_API_URL', 'https://api.frankfurter.app'),
+            // Add other provider-specific settings here if needed, e.g., API key
+        ],
+        // Example for another provider:
+        // 'other_provider' => [
+        //     'api_url' => env('OTHER_PROVIDER_API_URL', 'https://api.exchangerate.host'),
+        //     'api_key' => env('OTHER_PROVIDER_API_KEY'),
+        // ],
     ],
 
     /*

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -24,6 +25,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Country>|Country[] $countries The countries that use this currency.
+ * @property-read Collection<int, ExchangeRate>|ExchangeRate[] $ratesAsBase Exchange rates where this currency is the base currency.
+ * @property-read Collection<int, ExchangeRate>|ExchangeRate[] $ratesAsTarget Exchange rates where this currency is the target currency.
+ * @property-read ExchangeRate|null $latestRateAsBase The latest exchange rate where this currency is the base currency.
+ * @property-read ExchangeRate|null $latestRateAsTarget The latest exchange rate where this currency is the target currency.
  */
 class Currency extends Model
 {
@@ -51,6 +56,46 @@ class Currency extends Model
     public function countries(): HasMany
     {
         return $this->hasMany(Country::class, 'currency_code', 'code');
+    }
+
+    /**
+     * Get the exchange rates where this currency is the base currency.
+     *
+     * @return HasMany<ExchangeRate, $this>
+     */
+    public function ratesAsBase(): HasMany
+    {
+        return $this->hasMany(ExchangeRate::class, 'base_currency_code', 'code');
+    }
+
+    /**
+     * Get the exchange rates where this currency is the target currency.
+     *
+     * @return HasMany<ExchangeRate, $this>
+     */
+    public function ratesAsTarget(): HasMany
+    {
+        return $this->hasMany(ExchangeRate::class, 'target_currency_code', 'code');
+    }
+
+    /**
+     * Get the latest exchange rate where this currency is the base currency.
+     *
+     * @return HasOne<ExchangeRate, $this>
+     */
+    public function latestRateAsBase(): HasOne
+    {
+        return $this->hasOne(ExchangeRate::class, 'base_currency_code', 'code')->latestOfMany('rate_date');
+    }
+
+    /**
+     * Get the latest exchange rate where this currency is the target currency.
+     *
+     * @return HasOne<ExchangeRate, $this>
+     */
+    public function latestRateAsTarget(): HasOne
+    {
+        return $this->hasOne(ExchangeRate::class, 'target_currency_code', 'code')->latestOfMany('rate_date');
     }
 
     /**

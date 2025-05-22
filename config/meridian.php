@@ -96,7 +96,7 @@ return [
     */
     'exchange_rate_providers' => [
         'frankfurter' => [
-            'api_url' => env('FRANKFURTER_API_URL', 'https://api.frankfurter.app'),
+            'api_url' => env('FRANKFURTER_API_URL', 'https://api.frankfurter.dev/v1'),
             // Add other provider-specific settings here if needed, e.g., API key
         ],
         // Example for another provider:

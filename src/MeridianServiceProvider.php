@@ -6,6 +6,8 @@ namespace Denprog\Meridian;
 
 use Denprog\Meridian\Commands\InstallCommand;
 use Denprog\Meridian\Commands\UpdateExchangeRatesCommand;
+use Denprog\Meridian\Contracts\ExchangeRateProvider as ExchangeRateProviderContract;
+use Denprog\Meridian\Providers\FrankfurterAppProvider;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
@@ -40,6 +42,8 @@ class MeridianServiceProvider extends BaseServiceProvider
             $this->basePath.'/config/meridian.php',
             'meridian'
         );
+
+        $this->app->singleton(ExchangeRateProviderContract::class, FrankfurterAppProvider::class);
     }
 
     /**
@@ -66,13 +70,13 @@ class MeridianServiceProvider extends BaseServiceProvider
             ], 'meridian-migrations');
 
             // Optionally, publish language files
-            // $this->publishes([
-            //     $this->basePath.'/lang' => lang_path('vendor/meridian'),
-            // ], 'meridian-lang');
+             $this->publishes([
+                 $this->basePath.'/lang' => lang_path('vendor/meridian'),
+             ], 'meridian-lang');
         }
 
         // Load translations if they exist
-        // $this->loadTranslationsFrom($this->basePath.'/lang', 'meridian');
+        $this->loadTranslationsFrom($this->basePath.'/lang', 'meridian');
 
         $this->registerCommands();
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Denprog\Meridian\Models\Country;
 use Denprog\Meridian\Models\Currency;
+use Denprog\Meridian\Models\ExchangeRate;
 
 test('currency model has correct fillable attributes', function (): void {
     $country = Currency::factory()->create();
@@ -38,4 +39,20 @@ test('currency does not have countries', function (): void {
     $currency->refresh();
 
     expect($currency->countries()->count())->toBe(0);
+});
+
+test('currency have rates as base', function (): void {
+    $currency = Currency::factory()->create(['code' => 'EUR']);
+    ExchangeRate::factory()->count(3)->create(['base_currency_code' => 'EUR', 'target_currency_code' => 'USD']);
+    ExchangeRate::factory()->count(3)->create(['base_currency_code' => 'USD', 'target_currency_code' => 'EUR']);
+
+    $currency->refresh();
+
+    $latestRateAsBase = Currency::query()->with('latestRateAsBase')->first();
+    $latestRateAsTarget= Currency::query()->with('latestRateAsTarget')->first();
+
+    expect($currency->ratesAsBase()->count())->toBe(3)
+        ->and($currency->ratesAsTarget()->count())->toBe(3)
+        ->and($latestRateAsBase->latestRateAsBase->base_currency_code)->toBe($currency->code)
+        ->and($latestRateAsTarget->latestRateAsTarget->target_currency_code)->toBe($currency->code);
 });

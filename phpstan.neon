@@ -1,9 +1,0 @@
-parameters:
-    level: max
-    paths:
-        - src
-        - database
-    excludePaths:
-        - tests
-
-    reportUnmatchedIgnoredErrors: true

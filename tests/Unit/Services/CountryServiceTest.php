@@ -11,11 +11,18 @@ use Denprog\Meridian\Models\Country;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Services\CountryService;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Mockery;
 
-uses(RefreshDatabase::class);
+beforeEach(function () {
+    Session::spy();
+    Log::spy();
+
+    Config::set('meridian.default_country_iso_code', 'US');
+});
 
 it('return all countries', function (): void {
     CountryFactory::new()->count(5)->create();
@@ -214,8 +221,6 @@ it('retrieves a country with its currency relationship', function (): void {
     ]);
     $countryService = new CountryService();
 
-    // Act: Retrieve the country using a service method (e.g., findByIsoAlpha2Code)
-    // We test without cache for simplicity here, as other tests cover caching.
     $foundCountry = $countryService->findByIsoAlpha2Code($country->iso_alpha_2, false);
 
     // Assert
@@ -223,7 +228,160 @@ it('retrieves a country with its currency relationship', function (): void {
         ->and($foundCountry->id)->toBe($country->id)
         ->and($foundCountry->currency)->not->toBeNull()
         ->and($foundCountry->currency)->toBeInstanceOf(Currency::class)
-        ->and($foundCountry->currency_code)->toBe($currency->code) // Check the foreign key on Country
-        ->and($foundCountry->currency->id)->toBe($currency->id)   // Check the ID of the related Currency
-        ->and($foundCountry->currency->name)->toBe($currency->name); // Check a property of the related Currency
+        ->and($foundCountry->currency_code)->toBe($currency->code)
+        ->and($foundCountry->currency->id)->toBe($currency->id)
+        ->and($foundCountry->currency->name)->toBe($currency->name);
+});
+
+it('default returns country from config when valid', function (): void {
+    $configuredCountryCode = 'DE';
+    $country = CountryFactory::new()->create(['iso_alpha_2' => $configuredCountryCode]);
+    Config::set('meridian.default_country_iso_code', $configuredCountryCode);
+
+    $service = new CountryService();
+    $defaultCountry = $service->default();
+
+    expect($defaultCountry)->toBeInstanceOf(Country::class)
+        ->and($defaultCountry->iso_alpha_2)->toBe($configuredCountryCode)
+        ->and($defaultCountry->id)->toBe($country->id);
+});
+
+it('default returns US country when config code is not found or not set', function (): void {
+    Config::set('meridian.default_country_iso_code', 'XX');
+    $usCountry = CountryFactory::new()->create(['iso_alpha_2' => 'US']);
+
+    $service = new CountryService();
+    $defaultCountry = $service->default();
+
+    expect($defaultCountry)->toBeInstanceOf(Country::class)
+        ->and($defaultCountry->iso_alpha_2)->toBe('US')
+        ->and($defaultCountry->id)->toBe($usCountry->id);
+});
+
+it('default method caches the resolved default country in a property', function (): void {
+    $configuredCountryCode = 'FR';
+    CountryFactory::new()->create(['iso_alpha_2' => $configuredCountryCode]);
+    Config::set('meridian.default_country_iso_code', $configuredCountryCode);
+
+    $service = new CountryService();
+    $firstCallCountry = $service->default();
+    $secondCallCountry = $service->default();
+
+    expect($secondCallCountry)->toBe($firstCallCountry)
+        ->and($secondCallCountry->iso_alpha_2)->toBe($configuredCountryCode);
+});
+
+it('set puts valid country iso in session and updates property', function (): void {
+    $countryCode = 'DE';
+    CountryFactory::new()->create(['iso_alpha_2' => $countryCode]);
+    $service = new CountryService();
+
+    $service->set($countryCode);
+
+    Session::shouldHaveReceived('put')->with(CountryService::SESSION_KEY_USER_COUNTRY, $countryCode)->once();
+
+    $resolvedCountry = $service->get();
+    expect($resolvedCountry->iso_alpha_2)->toBe($countryCode);
+});
+
+it('set logs warning and does not put in session for non-existent country code', function (): void {
+    $nonExistentCode = 'XX';
+    $service = new CountryService();
+
+    $service->set($nonExistentCode);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(function (string $message, array $context = []) use ($nonExistentCode) {
+            return str_contains($message, 'Attempt to set user country to non-existent or disabled country.') &&
+                   isset($context['code']) && $context['code'] === $nonExistentCode;
+        })
+        ->once();
+
+    Session::shouldNotHaveReceived('put');
+});
+
+it('set converts input country code to uppercase before processing', function (): void {
+    $lowerCaseCode = 'fr';
+    $upperCaseCode = 'FR';
+    CountryFactory::new()->create(['iso_alpha_2' => $upperCaseCode]);
+    $service = new CountryService();
+
+    $service->set($lowerCaseCode);
+
+    Session::shouldHaveReceived('put')->with(CountryService::SESSION_KEY_USER_COUNTRY, $upperCaseCode)->once();
+
+    $resolvedCountry = $service->get();
+    expect($resolvedCountry->iso_alpha_2)->toBe($upperCaseCode);
+});
+
+it('get returns country from session when valid iso code in session', function (): void {
+    $sessionCountryCode = 'JP';
+    $sessionCountry = CountryFactory::new()->create(['iso_alpha_2' => $sessionCountryCode]);
+    Session::shouldReceive('get')->with(CountryService::SESSION_KEY_USER_COUNTRY)->once()->andReturn($sessionCountryCode);
+
+    $service = new CountryService();
+    $country = $service->get();
+
+    expect($country)->toBeInstanceOf(Country::class)
+        ->and($country->id)->toBe($sessionCountry->id)
+        ->and($country->iso_alpha_2)->toBe($sessionCountryCode);
+});
+
+it('get returns default country when no iso code in session', function (): void {
+    Session::shouldReceive('get')->with(CountryService::SESSION_KEY_USER_COUNTRY)->once()->andReturn(null);
+
+    $defaultCountryCode = 'CA';
+    $defaultCountry = CountryFactory::new()->create(['iso_alpha_2' => $defaultCountryCode]);
+    Config::set('meridian.default_country_iso_code', $defaultCountryCode);
+
+    $service = new CountryService();
+    $country = $service->get();
+
+    expect($country)->toBeInstanceOf(Country::class)
+        ->and($country->id)->toBe($defaultCountry->id)
+        ->and($country->iso_alpha_2)->toBe($defaultCountryCode);
+});
+
+it('get returns default country when invalid iso code in session', function (): void {
+    Session::shouldReceive('get')->with(CountryService::SESSION_KEY_USER_COUNTRY)->once()->andReturn('XX');
+
+    $defaultCountryCode = 'AU';
+    $defaultCountry = CountryFactory::new()->create(['iso_alpha_2' => $defaultCountryCode]);
+    Config::set('meridian.default_country_iso_code', $defaultCountryCode);
+
+    $service = new CountryService();
+    $country = $service->get();
+
+    expect($country)->toBeInstanceOf(Country::class)
+        ->and($country->id)->toBe($defaultCountry->id)
+        ->and($country->iso_alpha_2)->toBe($defaultCountryCode);
+});
+
+it('get returns default country when country from session is not found in database', function (): void {
+    Session::shouldReceive('get')->with(CountryService::SESSION_KEY_USER_COUNTRY)->once()->andReturn('NZ');
+
+    $defaultCountryCode = 'GB';
+    $defaultCountry = CountryFactory::new()->create(['iso_alpha_2' => $defaultCountryCode]);
+    Config::set('meridian.default_country_iso_code', $defaultCountryCode);
+
+    $service = new CountryService();
+    $country = $service->get();
+
+    expect($country)->toBeInstanceOf(Country::class)
+        ->and($country->id)->toBe($defaultCountry->id)
+        ->and($country->iso_alpha_2)->toBe($defaultCountryCode);
+});
+
+it('get method caches the resolved country in a property for subsequent calls', function (): void {
+    $sessionCountryCode = 'BR';
+    CountryFactory::new()->create(['iso_alpha_2' => $sessionCountryCode]);
+    Session::shouldReceive('get')->with(CountryService::SESSION_KEY_USER_COUNTRY)->once()->andReturn($sessionCountryCode);
+
+    $service = new CountryService();
+    $firstCallCountry = $service->get();
+
+    $secondCallCountry = $service->get();
+
+    expect($secondCallCountry)->toBe($firstCallCountry)
+        ->and($secondCallCountry->iso_alpha_2)->toBe($sessionCountryCode);
 });

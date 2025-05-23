@@ -3,5 +3,7 @@ parameters:
     paths:
         - src
         - database
+    excludePaths:
+        - tests
 
     reportUnmatchedIgnoredErrors: true

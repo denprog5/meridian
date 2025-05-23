@@ -53,7 +53,7 @@ class FrankfurterAppProvider implements ExchangeRateProvider
             /** @var array{base: string, date: string, rates: array<string, float>} $data */
             $data = $response->json();
 
-            return array_map(fn ($rate): float => (float) $rate, $data['rates']);
+            return $data['rates'];
 
         } catch (Throwable $e) {
             Log::error(

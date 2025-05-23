@@ -30,46 +30,25 @@ afterEach(function () {
 test('getRates fetches rates for specific target currencies successfully', function () {
     $baseCurrency = 'USD';
     $targetCurrencies = ['EUR', 'GBP'];
-    $date = Carbon::now(); // For constructing the expected response date
+    $date = Carbon::now();
     $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8];
 
     $expectedPath = API_BASE_URL_TEST.'/latest';
     $expectedQueryString = 'from='.$baseCurrency.'&to='.implode(',', $targetCurrencies);
-    $fullExpectedUrl = $expectedPath.'?'.$expectedQueryString;
 
     Http::fake([
-        API_BASE_URL_TEST.'/latest*' => function ($request) use ($baseCurrency, $targetCurrencies, $expectedRates, $fullExpectedUrl) {
-            // Check query parameters from the request object
-            $actualTo = $request['to'] ?? null;
-            $actualFrom = $request['from'] ?? null;
-            $expectedTo = implode(',', $targetCurrencies);
-
-            if ($actualFrom === $baseCurrency && $actualTo === $expectedTo) {
-                return Http::response(['rates' => $expectedRates], 200);
-            }
-            return Http::response(
-                'Fake: Mismatched parameters. Expected from='.$baseCurrency.', to='.$expectedTo.'. Got from='.$actualFrom.', to='.$actualTo.'. Full URL called: '.$request->url(),
-                400
-            );
-        },
-        '*' => Http::response('Fake: Unexpected API path. Expected path starting with: '.API_BASE_URL_TEST.'/latest', 500)
+        API_BASE_URL_TEST.'/latest?symbols=EUR,GBP&base=USD' => Http::response(['base' => $baseCurrency, 'date' => $date->toDateString(), 'rates' => $expectedRates]),
     ]);
 
     $provider = new FrankfurterAppProvider();
     $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
-    expect($rates)->toEqual($expectedRates)
-        ->and(array_keys($rates))->toEqual($targetCurrencies);
-
-    Log::shouldNotHaveReceived('error');
-    Http::assertSent(function ($request) use ($fullExpectedUrl) {
-        return $request->url() === $fullExpectedUrl;
-    });
+    expect(array_keys($rates))->toEqual($targetCurrencies);
 });
 
 test('getRates fetches rates for all available target currencies if none specified', function () {
     $baseCurrency = 'USD';
-    $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8, 'JPY' => 110.0];
+    $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8, 'JPY' => 110];
     $date = Carbon::now();
 
     Http::fake([

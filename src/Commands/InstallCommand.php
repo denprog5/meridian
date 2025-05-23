@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Commands;
 
+use Denprog\Meridian\MeridianServiceProvider;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Console\Command\Command as CommandAlias;
 
 class InstallCommand extends Command
 {
@@ -33,18 +35,18 @@ class InstallCommand extends Command
         // Publish config
         $this->comment('Publishing configuration...');
         Artisan::call('vendor:publish', [
-            '--provider' => \Denprog\Meridian\MeridianServiceProvider::class,
+            '--provider' => MeridianServiceProvider::class,
             '--tag' => 'meridian-config',
-            '--force' => $this->option('force'), // Allow forcing overwrite if --force is passed to meridian:install
+            '--force' => true,
         ]);
         $this->info('Configuration published.');
 
         // Publish migrations
         $this->comment('Publishing migrations...');
         Artisan::call('vendor:publish', [
-            '--provider' => \Denprog\Meridian\MeridianServiceProvider::class,
+            '--provider' => MeridianServiceProvider::class,
             '--tag' => 'meridian-migrations',
-            '--force' => $this->option('force'),
+            '--force' => true,
         ]);
         $this->info('Migrations published.');
 
@@ -59,6 +61,6 @@ class InstallCommand extends Command
 
         $this->info('Meridian package assets published successfully.');
 
-        return Command::SUCCESS;
+        return CommandAlias::SUCCESS;
     }
 }

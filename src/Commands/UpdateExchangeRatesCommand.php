@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Denprog\Meridian\Commands;
 
 use Denprog\Meridian\Services\ExchangeRateService;
-use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
+use Symfony\Component\Console\Command\Command as CommandAlias;
 
 class UpdateExchangeRatesCommand extends Command
 {
@@ -40,37 +39,14 @@ class UpdateExchangeRatesCommand extends Command
     {
         $this->info('Attempting to fetch and store exchange rates...');
 
-        try {
-            $result = $this->exchangeRateService->fetchAndStoreRatesFromFrankfurter();
+        $result = $this->exchangeRateService->fetchAndStoreRatesFromProvider();
 
-            if ($result['success']) {
-                $this->info($result['message']);
-                if (isset($result['base_currency'])) {
-                    $this->line('Base Currency: '.$result['base_currency']);
-                }
-                if (isset($result['fetched_at'])) {
-                    $this->line('Rates Date: '.$result['fetched_at']);
-                }
-                if (isset($result['rates_processed'])) {
-                    $this->line('Rates Processed: '.$result['rates_processed']);
-                }
-
-                return Command::SUCCESS;
-            }
+        if (! $result) {
             $this->error('Failed to update exchange rates.');
-            $this->error('Message: '.$result['message']);
-            Log::error('UpdateExchangeRatesCommand failed.', ['result' => $result]);
-
-            return Command::FAILURE;
-        } catch (Exception $e) {
-            $this->error('An unexpected error occurred while updating exchange rates.');
-            $this->error('Error: '.$e->getMessage());
-            Log::critical('UpdateExchangeRatesCommand unexpected exception.', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return Command::FAILURE;
+            return CommandAlias::FAILURE;
         }
+
+        $this->info('Exchange rates updated successfully.');
+        return CommandAlias::SUCCESS;
     }
 }

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use Denprog\Meridian\Models\Country;
 use Denprog\Meridian\Models\Currency;
+use Denprog\Meridian\Models\Language;
 use Denprog\Meridian\Services\CountryService;
 use Denprog\Meridian\Services\CurrencyService;
 use Denprog\Meridian\Services\ExchangeRateService;
+use Denprog\Meridian\Services\LanguageService;
 
 if (! function_exists('currency')) {
     /**
@@ -53,5 +55,15 @@ if (! function_exists('exchangeRate')) {
     function exchangeRate(): ExchangeRateService
     {
         return app(ExchangeRateService::class);
+    }
+}
+
+if (! function_exists('language')) {
+    /**
+     * Get the current active Language model instance.
+     */
+    function language(): Language
+    {
+        return app(LanguageService::class)->get();
     }
 }

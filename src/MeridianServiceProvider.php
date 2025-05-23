@@ -8,6 +8,10 @@ use Denprog\Meridian\Commands\InstallCommand;
 use Denprog\Meridian\Commands\UpdateExchangeRatesCommand;
 use Denprog\Meridian\Contracts\ExchangeRateProvider as ExchangeRateProviderContract;
 use Denprog\Meridian\Providers\FrankfurterAppProvider;
+use Denprog\Meridian\Services\CountryService;
+use Denprog\Meridian\Services\CurrencyService;
+use Denprog\Meridian\Services\ExchangeRateService;
+use Denprog\Meridian\Services\LanguageService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
@@ -44,6 +48,12 @@ class MeridianServiceProvider extends BaseServiceProvider
         );
 
         $this->app->singleton(ExchangeRateProviderContract::class, FrankfurterAppProvider::class);
+
+        // Bind services to the container
+        $this->app->singleton(CountryService::class);
+        $this->app->singleton(CurrencyService::class);
+        $this->app->singleton(ExchangeRateService::class);
+        $this->app->singleton(LanguageService::class);
     }
 
     /**

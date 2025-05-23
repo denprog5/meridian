@@ -20,34 +20,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Language Code
+    | Language Settings
     |--------------------------------------------------------------------------
     |
-    | Define the default two-letter ISO 639-1 language code for the package.
-    | This will be used for localizing data like country or currency names
-    | when a specific locale is not provided.
-    | Example: 'en', 'es', 'fr'.
+    | default_language_code: The default language code (e.g., 'en', 'ru') for the application.
+    |   This will be used if no language is set by the user or detected from the browser.
     |
     */
-    'default_language_code' => 'en',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cache Lifetimes
-    |--------------------------------------------------------------------------
-    |
-    | Configure the duration (in seconds) for which various data retrieved
-    | by the package will be cached. Setting a longer duration can improve
-    | performance but may result in stale data.
-    |
-    */
-    'cache_lifetimes' => [
-        'countries' => 3600, // 1 hour
-        'currencies' => 3600, // 1 hour
-        'languages' => 3600, // 1 hour
-        'exchange_rates' => 1800, // 30 minutes
-        'geolocation' => 300,  // 5 minutes for IP-based lookups
-    ],
+    'default_language_code' => env('MERIDIAN_DEFAULT_LANGUAGE_CODE', 'en'),
 
     /*
     |--------------------------------------------------------------------------
@@ -83,6 +63,24 @@ return [
             //     'pro_version' => false, // Set to true if using a paid plan for HTTPS
             // ],
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Lifetimes
+    |--------------------------------------------------------------------------
+    |
+    | Configure the duration (in seconds) for which various data retrieved
+    | by the package will be cached. Setting a longer duration can improve
+    | performance but may result in stale data.
+    |
+    */
+    'cache_lifetimes' => [
+        'countries' => 3600, // 1 hour
+        'currencies' => 3600, // 1 hour
+        'languages' => 3600, // 1 hour
+        'exchange_rates' => 1800, // 30 minutes
+        'geolocation' => 300,  // 5 minutes for IP-based lookups
     ],
 
     /*

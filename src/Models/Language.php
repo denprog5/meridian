@@ -61,7 +61,7 @@ class Language extends Model
     public function getLocalizedName(?string $locale = null): string
     {
         $key = 'meridian::languages.'.mb_strtolower($this->code);
-        $translated = trans($key, [], $locale);
+        $translated = trans(key: $key, locale: $locale);
 
         if ($translated === $key || is_array($translated)) {
             return $this->name;

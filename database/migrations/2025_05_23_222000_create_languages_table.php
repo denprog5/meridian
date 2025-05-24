@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('code', 2)->unique();
             $table->enum('text_direction', ['ltr', 'rtl'])->default('ltr');
             $table->boolean('is_active')->default(true);
-            $table->boolean('is_default')->default(false);
             $table->timestamps();
 
             $table->index('is_active');

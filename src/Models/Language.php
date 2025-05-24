@@ -8,6 +8,7 @@ use Denprog\Meridian\Database\Factories\LanguageFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany; // NEW IMPORT
 use Illuminate\Support\Carbon;
 
 /**
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active Whether the language is active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<\Denprog\Meridian\Models\Country> $countries The countries where this language is spoken.
  */
 class Language extends Model
 {
@@ -68,6 +70,18 @@ class Language extends Model
         }
 
         return $translated;
+    }
+
+    /**
+     * Get the countries where this language is spoken.
+     *
+     * @return BelongsToMany<Country>
+     */
+    public function countries(): BelongsToMany
+    {
+        return $this->belongsToMany(Country::class, 'country_language', 'language_code', 'country_code')
+            ->using(CountryLanguage::class)
+            ->withPivot('status');
     }
 
     /**

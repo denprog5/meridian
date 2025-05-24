@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -29,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Continent $continent The continent enum instance.
  * @property-read Currency|null $currency The currency of the country.
+ * @property-read \Illuminate\Database\Eloquent\Collection<\Denprog\Meridian\Models\Language> $languages The languages spoken in the country.
  */
 class Country extends Model
 {
@@ -78,6 +80,18 @@ class Country extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_code', 'code');
+    }
+
+    /**
+     * Get the languages spoken in the country.
+     *
+     * @return BelongsToMany<Language>
+     */
+    public function languages(): BelongsToMany
+    {
+        return $this->belongsToMany(Language::class, 'country_language', 'country_code', 'language_code')
+            ->using(CountryLanguage::class)
+            ->withPivot('status');
     }
 
     /**

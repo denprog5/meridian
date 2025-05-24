@@ -19,6 +19,7 @@ class MeridianDatabaseSeeder extends Seeder
             CountrySeeder::class,
             CurrencySeeder::class,
             LanguageSeeder::class,
+            CountryLanguageSeeder::class,
             // Add other package seeders here
         ]);
 

@@ -18,6 +18,7 @@ class MeridianDatabaseSeeder extends Seeder
         $this->call([
             CountrySeeder::class,
             CurrencySeeder::class,
+            LanguageSeeder::class,
             // Add other package seeders here
         ]);
 

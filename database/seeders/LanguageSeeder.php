@@ -17,6 +17,8 @@ class LanguageSeeder extends Seeder
      */
     public function run(): void
     {
+        /** @var string[] $activeLanguages */
+        $activeLanguages = config('meridian.active_languages', []);
         $jsonFilePath = __DIR__.'/../../resources/languages.json';
 
         try {
@@ -44,14 +46,13 @@ class LanguageSeeder extends Seeder
                 continue;
             }
 
-            // Ensure required fields are present, providing defaults if reasonable or skipping
             $name = $languageData['name'] ?? 'Unknown Language';
-            $nativeName = $languageData['native_name'] ?? $name; // Default native_name to name if not provided
+            $nativeName = $languageData['native_name'] ?? $name;
             $textDirection = $languageData['text_direction'] ?? 'ltr';
-            $isActive = $languageData['is_active'] ?? true;
+            $isActive = empty($activeLanguages) || in_array($languageData['code'], $activeLanguages);
 
             Language::query()->updateOrCreate(
-                ['code' => $languageData['code']], // Unique key for lookup
+                ['code' => $languageData['code']],
                 [
                     'name' => $name,
                     'native_name' => $nativeName,

@@ -30,6 +30,16 @@ return [
     'default_language_code' => env('MERIDIAN_DEFAULT_LANGUAGE_CODE', 'en'),
 
     /*
+    |
+    | active_languages: An array of language codes that are currently active in the application.
+    |   Only these languages will be available for selection or displayed in the interface.
+    |   If empty, all languages will be available.
+    |   Example: ['en', 'ru']
+    |
+    */
+    'active_languages' => [],
+
+    /*
     |--------------------------------------------------------------------------
     | Geolocation Configuration
     |--------------------------------------------------------------------------

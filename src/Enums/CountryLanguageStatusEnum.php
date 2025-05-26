@@ -15,8 +15,6 @@ enum CountryLanguageStatusEnum: string
     case REGIONAL = 'regional';
     case MINORITY = 'minority';
     case LINGUA_FRANCA = 'lingua_franca';
-    case PROMOTED = 'promoted';
-    case DE_FACTO_OFFICIAL = 'de_facto_official';
 
     /**
      * Get all enum values.

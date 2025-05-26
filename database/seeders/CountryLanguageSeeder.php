@@ -11,6 +11,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CountryLanguageSeeder extends Seeder
 {
@@ -39,45 +40,52 @@ class CountryLanguageSeeder extends Seeder
             return;
         }
 
-        DB::transaction(function () use ($allData) {
-            foreach ($allData as $item) {
-                if (
-                    !is_array($item) ||
-                    empty($item['country_code']) ||
-                    empty($item['language_code'])
-                ) {
-                    Log::warning('CountryLanguageSeeder: Skipping invalid data entry due to missing codes.', ['entry' => $item]);
-                    continue;
-                }
-
-                $statusValue = $item['status'] ?? null;
-                $statusEnum = null;
-
-                if ($statusValue !== null && $statusValue !== '') {
-                    $statusEnum = CountryLanguageStatusEnum::tryFrom((string) $statusValue);
-                    if ($statusEnum === null) {
-                        Log::warning(
-                            'CountryLanguageSeeder: Invalid status value encountered. Will be stored as NULL.',
-                            [
-                                'country_code' => $item['country_code'],
-                                'language_code' => $item['language_code'],
-                                'invalid_status' => $statusValue,
-                            ]
-                        );
+        try {
+            DB::transaction(function () use ($allData) {
+                foreach ($allData as $item) {
+                    if (
+                        !is_array($item) ||
+                        empty($item['country_code']) ||
+                        empty($item['language_code'])
+                    ) {
+                        Log::warning('CountryLanguageSeeder: Skipping invalid data entry due to missing codes.', ['entry' => $item]);
+                        continue;
                     }
-                }
 
-                CountryLanguage::updateOrCreate(
-                    [
-                        'country_code' => $item['country_code'],
-                        'language_code' => $item['language_code'],
-                    ],
-                    [
-                        'status' => $statusEnum, // Pass the enum instance or null
-                    ]
-                );
-            }
-        });
+                    $statusValue = $item['status'] ?? null;
+                    $statusEnum = null;
+
+                    if (is_string($statusValue) && $statusValue !== '') {
+                        $statusEnum = CountryLanguageStatusEnum::tryFrom($statusValue);
+                        if ($statusEnum === null) {
+                            Log::warning(
+                                'CountryLanguageSeeder: Invalid status value encountered. Will be stored as NULL.',
+                                [
+                                    'country_code' => $item['country_code'],
+                                    'language_code' => $item['language_code'],
+                                    'invalid_status' => $statusValue,
+                                ]
+                            );
+                        }
+                    }
+
+                    CountryLanguage::query()->updateOrCreate(
+                        [
+                            'country_code' => $item['country_code'],
+                            'language_code' => $item['language_code'],
+                        ],
+                        [
+                            'status' => $statusEnum,
+                        ]
+                    );
+                }
+            });
+        } catch (Throwable $e) {
+            $this->command->error('Error seeding country-language relationships: '.$e->getMessage());
+            Log::error('CountryLanguageSeeder: Error seeding country-language relationships', ['exception' => $e]);
+
+            return;
+        }
 
         $this->command->info('Country-language relationships seeded successfully.');
     }

@@ -7,12 +7,9 @@ namespace Denprog\Meridian\Tests\Unit\Services;
 use Denprog\Meridian\Database\Factories\CurrencyFactory;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Services\CurrencyService;
-use Denprog\Meridian\Exceptions\BaseCurrencyNotDefinedException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 use Mockery;
 
 beforeEach(function (): void {
@@ -170,6 +167,7 @@ it('list uses cache for active currencies collection', function (): void {
         ->with('meridian.active_currencies_collection', Mockery::any(), Mockery::on(function ($closure) use ($expectedCollection): bool {
             $data = $closure();
             expect($data->sortBy('code')->pluck('code')->all())->toEqual($expectedCollection->sortBy('code')->pluck('code')->all());
+
             return true;
         }))
         ->andReturn($expectedCollection);

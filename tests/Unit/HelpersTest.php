@@ -11,14 +11,13 @@ use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Services\CountryService;
 use Denprog\Meridian\Services\CurrencyService;
 
-
-describe('currency helper', function () {
-    it('returns CurrencyService instance when no code is provided', function () {
+describe('currency helper', function (): void {
+    it('returns CurrencyService instance when no code is provided', function (): void {
         $result = currency();
         expect($result)->toBeInstanceOf(CurrencyService::class);
     });
 
-    it('returns Currency model when a valid code is provided', function () {
+    it('returns Currency model when a valid code is provided', function (): void {
         CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
 
         $result = currency('EUR');
@@ -26,19 +25,19 @@ describe('currency helper', function () {
             ->and($result->code)->toBe('EUR');
     });
 
-    it('returns null when an invalid code is provided', function () {
+    it('returns null when an invalid code is provided', function (): void {
         $result = currency('XYZ');
         expect($result)->toBeNull();
     });
 });
 
-describe('country helper', function () {
-    it('returns CountryService instance when no code is provided', function () {
+describe('country helper', function (): void {
+    it('returns CountryService instance when no code is provided', function (): void {
         $result = country();
         expect($result)->toBeInstanceOf(CountryService::class);
     });
 
-    it('returns Country model when a valid ISO code is provided', function () {
+    it('returns Country model when a valid ISO code is provided', function (): void {
         CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
         CountryFactory::new()->create(['iso_alpha_2' => 'DE', 'currency_code' => 'EUR']);
 
@@ -47,7 +46,7 @@ describe('country helper', function () {
             ->and($result->iso_alpha_2)->toBe('DE');
     });
 
-    it('returns null when an invalid ISO code is provided', function () {
+    it('returns null when an invalid ISO code is provided', function (): void {
         // Ensure no country with code 'XX' exists
         $result = country('XX');
         expect($result)->toBeNull();

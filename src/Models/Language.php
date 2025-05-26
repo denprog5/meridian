@@ -44,18 +44,6 @@ class Language extends Model
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-        ];
-    }
-
-    /**
      * Get the localized name of the language.
      *
      * @param  string|null  $locale  The locale to use for translation. Defaults to application locale.
@@ -80,7 +68,14 @@ class Language extends Model
      */
     public function countries(): BelongsToMany
     {
-        return $this->belongsToMany(Country::class, 'country_language', 'language_code', 'country_code')
+        return $this->belongsToMany(
+            Country::class,
+            'country_language',
+            'language_code',
+            'country_code',
+            'code',
+            'iso_alpha_2'
+        )
             ->using(CountryLanguage::class)
             ->withPivot('status');
     }
@@ -93,5 +88,17 @@ class Language extends Model
     protected static function newFactory(): Factory
     {
         return LanguageFactory::new();
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
     }
 }

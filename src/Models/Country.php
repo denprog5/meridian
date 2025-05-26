@@ -90,7 +90,14 @@ class Country extends Model
      */
     public function languages(): BelongsToMany
     {
-        return $this->belongsToMany(Language::class, 'country_language', 'country_code', 'language_code')
+        return $this->belongsToMany(
+            Language::class,
+            'country_language',
+            'country_code',
+            'language_code',
+            'iso_alpha_2',
+            'code',
+        )
             ->using(CountryLanguage::class)
             ->withPivot('status');
     }

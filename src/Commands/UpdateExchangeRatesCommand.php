@@ -41,12 +41,14 @@ class UpdateExchangeRatesCommand extends Command
 
         $result = $this->exchangeRateService->fetchAndStoreRatesFromProvider();
 
-        if (! $result) {
+        if ($result === null || $result === []) {
             $this->error('Failed to update exchange rates.');
+
             return CommandAlias::FAILURE;
         }
 
         $this->info('Exchange rates updated successfully.');
+
         return CommandAlias::SUCCESS;
     }
 }

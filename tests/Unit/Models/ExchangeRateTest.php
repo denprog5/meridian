@@ -10,7 +10,6 @@ use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\ExchangeRate;
 use Illuminate\Support\Carbon;
 
-
 test('exchange rate model has correct fillable attributes', function (): void {
     $exchangeRate = new ExchangeRate();
     expect($exchangeRate->getFillable())->toBe([

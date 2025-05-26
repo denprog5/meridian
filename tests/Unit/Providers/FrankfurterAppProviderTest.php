@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\Log;
 
 const API_BASE_URL_TEST = 'https://api.frankfurter.dev/v1'; // Match provider's constant
 
-beforeEach(function () {
+beforeEach(function (): void {
     Log::spy();
 });
 
-test('getRates fetches rates for specific target currencies successfully', function () {
+test('getRates fetches rates for specific target currencies successfully', function (): void {
     $baseCurrency = 'USD';
     $targetCurrencies = ['EUR', 'GBP'];
     $date = Carbon::now();
@@ -31,7 +31,7 @@ test('getRates fetches rates for specific target currencies successfully', funct
     expect(array_keys($rates))->toEqual($targetCurrencies);
 });
 
-test('getRates fetches rates for all available target currencies if none specified', function () {
+test('getRates fetches rates for all available target currencies if none specified', function (): void {
     $baseCurrency = 'USD';
     $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8, 'JPY' => 110];
     $date = Carbon::now();
@@ -45,17 +45,18 @@ test('getRates fetches rates for all available target currencies if none specifi
 
     expect($rates)->toBe($expectedRates);
 
-    Http::assertSent(function ($request) use ($baseCurrency) {
+    Http::assertSent(function ($request) use ($baseCurrency): bool {
         $expectedUrl = API_BASE_URL_TEST.'/latest?from='.$baseCurrency;
+
         return $request->url() === $expectedUrl &&
                $request['from'] === $baseCurrency &&
-               !isset($request['to']);
+               ! isset($request['to']);
     });
 
     Log::shouldNotHaveReceived('error');
 });
 
-test('getRates fetches rates for a specific date successfully', function () {
+test('getRates fetches rates for a specific date successfully', function (): void {
     $baseCurrency = 'USD';
     $targetCurrencies = ['EUR'];
     $date = Carbon::parse('2023-01-15');
@@ -70,8 +71,9 @@ test('getRates fetches rates for a specific date successfully', function () {
 
     expect($rates)->toBe($expectedRates);
 
-    Http::assertSent(function ($request) use ($baseCurrency, $targetCurrencies, $date) {
+    Http::assertSent(function (array $request) use ($baseCurrency, $targetCurrencies, $date): bool {
         $expectedUrl = API_BASE_URL_TEST.'/'.$date->toDateString().'?from='.$baseCurrency.'&to='.implode(',', $targetCurrencies);
+
         return $request->url() === $expectedUrl &&
                $request['from'] === $baseCurrency &&
                $request['to'] === implode(',', $targetCurrencies);
@@ -80,7 +82,7 @@ test('getRates fetches rates for a specific date successfully', function () {
     Log::shouldNotHaveReceived('error');
 });
 
-test('getRates handles API request failure and logs error', function () {
+test('getRates handles API request failure and logs error', function (): void {
     $baseCurrency = 'USD';
     $targetCurrencies = ['EUR'];
 
@@ -95,15 +97,13 @@ test('getRates handles API request failure and logs error', function () {
 
     Log::shouldHaveReceived('error')
         ->once()
-        ->withArgs(function (string $message, array $context = []) {
-            return str_contains($message, 'Frankfurter.app API request failed.') &&
-                   isset($context['status']) && $context['status'] === 500 &&
-                   isset($context['url']) && str_contains($context['url'], API_BASE_URL_TEST.'/latest') &&
-                   isset($context['params']['from']) && $context['params']['from'] === 'USD';
-        });
+        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Frankfurter.app API request failed.') &&
+               isset($context['status']) && $context['status'] === 500 &&
+               isset($context['url']) && str_contains((string) $context['url'], API_BASE_URL_TEST.'/latest') &&
+               isset($context['params']['from']) && $context['params']['from'] === 'USD');
 });
 
-test('getRates returns null and logs error if API response is not successful but not a client/server error', function () {
+test('getRates returns null and logs error if API response is not successful but not a client/server error', function (): void {
     $baseCurrency = 'USD';
     $targetCurrencies = ['EUR'];
 
@@ -118,15 +118,13 @@ test('getRates returns null and logs error if API response is not successful but
 
     Log::shouldHaveReceived('error')
         ->once()
-        ->withArgs(function (string $message, array $context = []) use ($baseCurrency, $targetCurrencies) {
-            return str_contains($message, 'Exception while fetching rates from Frankfurter.app.') &&
-                   isset($context['exception']) &&
-                   isset($context['base_currency']) && $context['base_currency'] === $baseCurrency &&
-                   isset($context['target_currencies']) && $context['target_currencies'] === $targetCurrencies;
-        });
+        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Exception while fetching rates from Frankfurter.app.') &&
+               isset($context['exception']) &&
+               isset($context['base_currency']) && $context['base_currency'] === $baseCurrency &&
+               isset($context['target_currencies']) && $context['target_currencies'] === $targetCurrencies);
 });
 
-test('getRates returns null and logs error if API response is successful but rates key is missing', function () {
+test('getRates returns null and logs error if API response is successful but rates key is missing', function (): void {
     $baseCurrency = 'USD';
     $targetCurrencies = ['EUR'];
 
@@ -141,10 +139,8 @@ test('getRates returns null and logs error if API response is successful but rat
 
     Log::shouldHaveReceived('error')
         ->once()
-        ->withArgs(function (string $message, array $context = []) use ($baseCurrency, $targetCurrencies) {
-            return str_contains($message, 'Exception while fetching rates from Frankfurter.app.') &&
-                   isset($context['exception']) &&
-                   isset($context['base_currency']) && $context['base_currency'] === $baseCurrency &&
-                   isset($context['target_currencies']) && $context['target_currencies'] === $targetCurrencies;
-        });
+        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Exception while fetching rates from Frankfurter.app.') &&
+               isset($context['exception']) &&
+               isset($context['base_currency']) && $context['base_currency'] === $baseCurrency &&
+               isset($context['target_currencies']) && $context['target_currencies'] === $targetCurrencies);
 });

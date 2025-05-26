@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Models;
 
+use Denprog\Meridian\Database\Factories\CountryLanguageFactory;
 use Denprog\Meridian\Enums\CountryLanguageStatusEnum;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
@@ -19,12 +22,8 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  */
 class CountryLanguage extends Pivot
 {
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'country_language';
+    /** @use HasFactory<CountryLanguageFactory> */
+    use HasFactory;
 
     /**
      * Indicates if the model should be timestamped.
@@ -39,6 +38,13 @@ class CountryLanguage extends Pivot
      * @var bool
      */
     public $incrementing = false;
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'country_language';
 
     /**
      * The attributes that are mass assignable.
@@ -78,5 +84,15 @@ class CountryLanguage extends Pivot
     public function language(): BelongsTo
     {
         return $this->belongsTo(Language::class, 'language_code', 'code');
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     *
+     * @return Factory<CountryLanguage>
+     */
+    protected static function newFactory(): Factory
+    {
+        return CountryLanguageFactory::new();
     }
 }

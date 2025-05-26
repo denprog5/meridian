@@ -30,18 +30,19 @@ class LanguageService
         $language = null;
 
         $sessionLanguageCode = Session::get(self::SESSION_KEY_USER_LANGUAGE);
-        if (!empty($sessionLanguageCode) && is_string($sessionLanguageCode)) {
+        if (! empty($sessionLanguageCode) && is_string($sessionLanguageCode)) {
             $language = $this->findByCode($sessionLanguageCode);
-            if (!$language) {
+            if (! $language instanceof Language) {
                 Session::forget(self::SESSION_KEY_USER_LANGUAGE);
             }
         }
 
-        if (!$language) {
+        if (! $language instanceof Language) {
             $language = $this->default();
         }
 
         $this->language = $language;
+
         return $this->language;
     }
 
@@ -53,7 +54,7 @@ class LanguageService
         $code = mb_strtolower($code);
         $language = $this->findByCode($code);
 
-        if (!$language) {
+        if (! $language instanceof Language) {
             return;
         }
 
@@ -73,12 +74,13 @@ class LanguageService
         $defaultCode = Config::string('meridian.default_language_code', 'en');
         $language = $this->findByCode($defaultCode);
 
-        if (!$language && $defaultCode !== 'en') {
+        if (! $language instanceof Language && $defaultCode !== 'en') {
             $language = $this->findByCode('en');
         }
 
         /** @var Language $language */
         $this->defaultLanguage = $language;
+
         return $this->defaultLanguage;
     }
 
@@ -158,9 +160,9 @@ class LanguageService
         $preferredLanguages = request()->getLanguages();
 
         foreach ($preferredLanguages as $lang) {
-            $primaryCode = mb_strtolower(substr($lang, 0, 2));
+            $primaryCode = mb_strtolower(mb_substr($lang, 0, 2));
 
-            if (strlen($primaryCode) === 2) {
+            if (mb_strlen($primaryCode) === 2) {
                 return $primaryCode;
             }
         }
@@ -176,7 +178,7 @@ class LanguageService
         $browserLanguageCode = $this->detectBrowserLanguage();
         $language = false;
 
-        if (! empty($browserLanguageCode)) {
+        if ($browserLanguageCode !== null && $browserLanguageCode !== '' && $browserLanguageCode !== '0') {
             $language = $this->findByCode($browserLanguageCode);
         }
 

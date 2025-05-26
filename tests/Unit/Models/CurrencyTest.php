@@ -49,7 +49,7 @@ test('currency have rates as base', function (): void {
     $currency->refresh();
 
     $latestRateAsBase = Currency::query()->with('latestRateAsBase')->first();
-    $latestRateAsTarget= Currency::query()->with('latestRateAsTarget')->first();
+    $latestRateAsTarget = Currency::query()->with('latestRateAsTarget')->first();
 
     expect($currency->ratesAsBase()->count())->toBe(3)
         ->and($currency->ratesAsTarget()->count())->toBe(3)

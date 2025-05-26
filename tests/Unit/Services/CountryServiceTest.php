@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Mockery;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Session::spy();
     Log::spy();
 
@@ -291,10 +291,8 @@ it('set logs warning and does not put in session for non-existent country code',
     $service->set($nonExistentCode);
 
     Log::shouldHaveReceived('warning')
-        ->withArgs(function (string $message, array $context = []) use ($nonExistentCode) {
-            return str_contains($message, 'Attempt to set user country to non-existent or disabled country.') &&
-                   isset($context['code']) && $context['code'] === $nonExistentCode;
-        })
+        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Attempt to set user country to non-existent or disabled country.') &&
+               isset($context['code']) && $context['code'] === $nonExistentCode)
         ->once();
 
     Session::shouldNotHaveReceived('put');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('country_language', function (Blueprint $table) {
+        Schema::create('country_language', function (Blueprint $table): void {
             $table->string('country_code', 2);
             $table->string('language_code', 2);
             $table->string('status')->nullable()->index();

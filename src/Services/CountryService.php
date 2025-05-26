@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use RuntimeException;
 
 class CountryService
 {
@@ -85,17 +86,18 @@ class CountryService
         $country = $this->findByIsoAlpha2Code($defaultIsoCodeSetting);
 
         // If the configured/primary default wasn't found, AND it wasn't 'US' already, explicitly try 'US'.
-        if (!$country instanceof Country && $defaultIsoCodeSetting !== 'US') {
+        if (! $country instanceof Country && $defaultIsoCodeSetting !== 'US') {
             // Log::warning("Configured default country '{$defaultIsoCodeSetting}' not found. Falling back to 'US'."); // Optional logging
             $country = $this->findByIsoAlpha2Code('US');
         }
-        
+
         // If, after all fallbacks, no country is found, then it's a critical problem.
-        if (!$country instanceof Country) {
-            throw new \RuntimeException("Default country ('{$defaultIsoCodeSetting}' or ultimate fallback 'US') could not be found. Please ensure a valid default country exists in the database.");
+        if (! $country instanceof Country) {
+            throw new RuntimeException("Default country ('{$defaultIsoCodeSetting}' or ultimate fallback 'US') could not be found. Please ensure a valid default country exists in the database.");
         }
 
         $this->defaultCountry = $country;
+
         return $this->defaultCountry;
     }
 

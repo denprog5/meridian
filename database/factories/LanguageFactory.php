@@ -39,24 +39,20 @@ class LanguageFactory extends Factory
 
     /**
      * Indicate that the language is active.
-     *
-     * @return static
      */
     public function active(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'is_active' => true,
         ]);
     }
 
     /**
      * Indicate that the language is inactive.
-     *
-     * @return static
      */
     public function inactive(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'is_active' => false,
         ]);
     }

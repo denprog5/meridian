@@ -33,7 +33,7 @@ class CountryLanguageSeeder extends Seeder
 
         $allData = json_decode($jsonData, true);
 
-        if (!is_array($allData)) {
+        if (! is_array($allData)) {
             $this->command->error('Invalid JSON data in: '.$jsonFilePath);
             Log::error('CountryLanguageSeeder: Invalid JSON data in: '.$jsonFilePath, ['data' => $jsonData]);
 
@@ -41,14 +41,15 @@ class CountryLanguageSeeder extends Seeder
         }
 
         try {
-            DB::transaction(function () use ($allData) {
+            DB::transaction(function () use ($allData): void {
                 foreach ($allData as $item) {
                     if (
-                        !is_array($item) ||
+                        ! is_array($item) ||
                         empty($item['country_code']) ||
                         empty($item['language_code'])
                     ) {
                         Log::warning('CountryLanguageSeeder: Skipping invalid data entry due to missing codes.', ['entry' => $item]);
+
                         continue;
                     }
 

@@ -9,11 +9,11 @@ use Denprog\Meridian\Services\ExchangeRateService;
 use Mockery;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->exchangeRateServiceMock = Mockery::mock(ExchangeRateService::class);
 });
 
-it('handles command successfully when rates are updated', function () {
+it('handles command successfully when rates are updated', function (): void {
     $this->exchangeRateServiceMock
         ->shouldReceive('fetchAndStoreRatesFromProvider')
         ->once()
@@ -29,7 +29,7 @@ it('handles command successfully when rates are updated', function () {
         ->assertExitCode(CommandAlias::SUCCESS);
 });
 
-it('handles command failure when rate update fails', function () {
+it('handles command failure when rate update fails', function (): void {
     $this->exchangeRateServiceMock
         ->shouldReceive('fetchAndStoreRatesFromProvider')
         ->once()

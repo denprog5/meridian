@@ -27,6 +27,13 @@ class CountryLanguage extends Pivot
     protected $table = 'country_language';
 
     /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
+
+    /**
      * Indicates if the IDs are auto-incrementing.
      *
      * @var bool
@@ -55,6 +62,8 @@ class CountryLanguage extends Pivot
 
     /**
      * Get the country associated with the record.
+     *
+     * @return BelongsTo<Country, $this>
      */
     public function country(): BelongsTo
     {
@@ -63,6 +72,8 @@ class CountryLanguage extends Pivot
 
     /**
      * Get the language associated with this pivot entry.
+     *
+     * @return BelongsTo<Language, $this>
      */
     public function language(): BelongsTo
     {

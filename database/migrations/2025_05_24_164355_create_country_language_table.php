@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('country_language', function (Blueprint $table) {
             $table->string('country_code', 2);
             $table->string('language_code', 2);
-            $table->string('status')->nullable()->index(); // status can be 'official', 'common', 'regional', 'minority'
+            $table->string('status')->nullable()->index();
 
             $table->foreign('country_code')->references('iso_alpha_2')->on('countries')->onDelete('cascade');
             $table->foreign('language_code')->references('code')->on('languages')->onDelete('cascade');

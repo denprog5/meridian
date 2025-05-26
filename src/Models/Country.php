@@ -6,6 +6,7 @@ namespace Denprog\Meridian\Models;
 
 use Denprog\Meridian\Database\Factories\CountryFactory;
 use Denprog\Meridian\Enums\Continent;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Continent $continent The continent enum instance.
  * @property-read Currency|null $currency The currency of the country.
- * @property-read \Illuminate\Database\Eloquent\Collection<\Denprog\Meridian\Models\Language> $languages The languages spoken in the country.
+ * @property-read Collection<int, Language> $languages The languages spoken in the country.
  */
 class Country extends Model
 {
@@ -85,7 +86,7 @@ class Country extends Model
     /**
      * Get the languages spoken in the country.
      *
-     * @return BelongsToMany<Language>
+     * @return BelongsToMany<Language, $this, CountryLanguage>
      */
     public function languages(): BelongsToMany
     {

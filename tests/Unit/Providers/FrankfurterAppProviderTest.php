@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Providers;
 
 use Denprog\Meridian\Providers\FrankfurterAppProvider;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -71,7 +72,7 @@ test('getRates fetches rates for a specific date successfully', function (): voi
 
     expect($rates)->toBe($expectedRates);
 
-    Http::assertSent(function (array $request) use ($baseCurrency, $targetCurrencies, $date): bool {
+    Http::assertSent(function (Request $request) use ($baseCurrency, $targetCurrencies, $date): bool {
         $expectedUrl = API_BASE_URL_TEST.'/'.$date->toDateString().'?from='.$baseCurrency.'&to='.implode(',', $targetCurrencies);
 
         return $request->url() === $expectedUrl &&

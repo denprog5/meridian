@@ -72,10 +72,6 @@ class ExchangeRateService
         string $toCurrencySymbolOrCode,
         string|Carbon|null $date = null
     ): ?float {
-        if ($amount === 0) {
-            return 0.0;
-        }
-
         $fromCurrency = $this->_resolveCurrency($fromCurrencySymbolOrCode);
         $toCurrency = $this->_resolveCurrency($toCurrencySymbolOrCode);
 
@@ -188,7 +184,7 @@ class ExchangeRateService
             ->where('rate_date', $rateDateString)
             ->value('rate');
 
-        if ($inverseRate !== null && $inverseRate !== 0) {
+        if (! empty($inverseRate)) {
             $calculatedRate = 1 / $inverseRate;
             Cache::put($cacheKey, $calculatedRate, Carbon::now()->addDays(Config::integer('meridian.cache_duration_days.exchange_rates', 7)));
 
@@ -200,7 +196,7 @@ class ExchangeRateService
             $rateFromBaseToSource = $this->_getRate($configuredBase, $fromCurrencyCode, $dateInstance);
             $rateFromBaseToTarget = $this->_getRate($configuredBase, $toCurrencyCode, $dateInstance);
 
-            if ($rateFromBaseToSource !== null && $rateFromBaseToSource !== 0 && $rateFromBaseToTarget !== null) {
+            if (! empty($rateFromBaseToSource) && ! empty($rateFromBaseToTarget)) {
                 $calculatedRate = $rateFromBaseToTarget / $rateFromBaseToSource;
                 Cache::put($cacheKey, $calculatedRate, Carbon::now()->addDays(Config::integer('meridian.cache_duration_days.exchange_rates', 7)));
 

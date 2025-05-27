@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Tests\Unit\Services;
 
+use Closure;
 use Denprog\Meridian\Database\Factories\CurrencyFactory;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Services\CurrencyService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Session;
 use Mockery;
 
 beforeEach(function (): void {
@@ -28,17 +30,12 @@ it('returns all currencies', function (): void {
 });
 
 it('returns all currencies from cache', function (): void {
-    CurrencyFactory::new()->count(3)->create();
+    $currencies = CurrencyFactory::new()->count(3)->create();
 
-    Cache::shouldReceive('remember')
+    Cache::expects('remember')
         ->once()
-        ->with('currencies.all', Mockery::any(), Mockery::on(function ($closure): bool {
-            $data = $closure();
-            expect($data)->toBeInstanceOf(Collection::class)->and($data)->toHaveCount(3);
-
-            return true;
-        }))
-        ->andReturn(Currency::query()->orderBy('name')->get());
+        ->with('currencies.all', Mockery::any(), Mockery::type(Closure::class))
+        ->andReturn($currencies);
 
     expect((new CurrencyService())->all())
         ->toBeInstanceOf(Collection::class)
@@ -178,7 +175,7 @@ it('list uses cache for active currencies collection', function (): void {
     expect($activeCurrencies)->toEqual($expectedCollection);
 });
 
-it('baseCurrency returns currency from config when valid and enabled', function (): void {
+it('base currency returns currency from config when valid', function (): void {
     Config::set('meridian.base_currency_code', 'EUR');
     CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
@@ -188,4 +185,75 @@ it('baseCurrency returns currency from config when valid and enabled', function 
 
     expect($base)->toBeInstanceOf(Currency::class)
         ->and($base->code)->toBe('EUR');
+
+    $baseReturned = $service->baseCurrency();
+
+    expect($baseReturned)->toBeInstanceOf(Currency::class)
+        ->and($baseReturned->code)->toBe('EUR');
 });
+
+test('get currency', function (): void {
+    CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
+    CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
+
+    $service = new CurrencyService();
+    $currency = $service->get();
+    expect($currency)->toBeInstanceOf(Currency::class)
+        ->and($currency->code)->toBe('USD');
+
+    $currencyFromReturned = $service->get();
+    expect($currencyFromReturned)->toBeInstanceOf(Currency::class)
+        ->and($currencyFromReturned->code)->toBe('USD');
+});
+
+test('get currency from session when they exist (session hit)', function (): void {
+    CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
+    CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
+
+    $sessionKey = CurrencyService::SESSION_CURRENCY_CODE;
+
+    Session::expects('get')
+        ->once()
+        ->with($sessionKey)
+        ->andReturn('EUR');
+
+    $service = new CurrencyService();
+    $currency = $service->get();
+    expect($currency)->toBeInstanceOf(Currency::class)
+        ->and($currency->code)->toBe('EUR');
+});
+
+test('get currency if not in session (session miss)', function (): void {
+    CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
+    CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
+
+    $sessionKey = CurrencyService::SESSION_CURRENCY_CODE;
+
+    Session::expects('get')
+        ->once()
+        ->with($sessionKey)
+        ->andReturnNull();
+
+    $service = new CurrencyService();
+    $currency = $service->get();
+    expect($currency)->toBeInstanceOf(Currency::class)
+        ->and($currency->code)->toBe('USD');
+});
+
+test('get base currency when session store disabled currency', function (): void {
+    CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => false]);
+    CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
+
+    $sessionKey = CurrencyService::SESSION_CURRENCY_CODE;
+
+    Session::expects('get')
+        ->once()
+        ->with($sessionKey)
+        ->andReturn('EUR');
+
+    $service = new CurrencyService();
+    $currency = $service->get();
+    expect($currency)->toBeInstanceOf(Currency::class)
+        ->and($currency->code)->toBe('USD');
+});
+

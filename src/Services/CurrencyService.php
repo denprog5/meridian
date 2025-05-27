@@ -55,12 +55,8 @@ class CurrencyService
 
         $configuredBaseCurrencyCode = Config::string('meridian.base_currency_code', 'USD');
 
+        /** @var Currency $baseCurrency */
         $baseCurrency = $this->findByCode($configuredBaseCurrencyCode, false);
-        if (! $baseCurrency instanceof Currency || ! $baseCurrency->enabled) {
-
-            /** @var Currency $baseCurrency */
-            $baseCurrency = Currency::query()->where('code', $configuredBaseCurrencyCode)->first();
-        }
 
         $this->baseCurrency = $baseCurrency;
 

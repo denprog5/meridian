@@ -65,6 +65,8 @@ class Language extends Model
      * Get the countries where this language is spoken.
      *
      * @return BelongsToMany<Country, $this, CountryLanguage>
+     *
+     *     @phpstan-return BelongsToMany<Country, $this, CountryLanguage>
      */
     public function countries(): BelongsToMany
     {

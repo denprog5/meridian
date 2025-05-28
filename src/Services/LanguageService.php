@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
+use RuntimeException;
 
 final class LanguageService implements LanguageServiceContract
 {
@@ -72,14 +73,21 @@ final class LanguageService implements LanguageServiceContract
             return $this->defaultLanguage;
         }
 
-        $defaultCode = Config::string('meridian.default_language_code', 'en');
-        $language = $this->findByCode($defaultCode);
+        $configuredCode = Config::get('meridian.default_language_code');
+        $language = null;
 
-        if (! $language instanceof Language && $defaultCode !== 'en') {
+        if (is_string($configuredCode) && ($configuredCode !== '' && $configuredCode !== '0')) {
+            $language = $this->findByCode(mb_strtolower($configuredCode));
+        }
+
+        if (! $language instanceof Language) {
             $language = $this->findByCode('en');
         }
 
-        /** @var Language $language */
+        if (! $language instanceof Language) {
+            throw new RuntimeException("Unable to determine default language. Fallback 'en' not found.");
+        }
+
         $this->defaultLanguage = $language;
 
         return $this->defaultLanguage;
@@ -158,9 +166,18 @@ final class LanguageService implements LanguageServiceContract
      */
     public function detectBrowserLanguage(): ?string
     {
+        $acceptLanguageHeader = request()->server('HTTP_ACCEPT_LANGUAGE');
+
+        if (empty($acceptLanguageHeader)) {
+            return null;
+        }
+
         $preferredLanguages = request()->getLanguages();
 
         foreach ($preferredLanguages as $lang) {
+            if (in_array(mb_trim($lang), ['', '0'], true)) {
+                continue;
+            }
             $primaryCode = mb_strtolower(mb_substr($lang, 0, 2));
 
             if (mb_strlen($primaryCode) === 2) {

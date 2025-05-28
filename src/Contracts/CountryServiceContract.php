@@ -7,6 +7,7 @@ namespace Denprog\Meridian\Contracts;
 use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
 use Illuminate\Database\Eloquent\Collection;
+use RuntimeException;
 
 interface CountryServiceContract
 {
@@ -17,7 +18,7 @@ interface CountryServiceContract
      * If no country is set in the session, or if the set country is invalid,
      * it falls back to the default country.
      *
-     * @return \Denprog\Meridian\Models\Country The active Country model.
+     * @return Country The active Country model.
      */
     public function get(): Country;
 
@@ -26,7 +27,7 @@ interface CountryServiceContract
      * The country code is validated against existing and enabled countries.
      * If the country code is invalid, a warning is logged, and the session is not updated.
      *
-     * @param string $countryIsoAlpha2Code The ISO 3166-1 Alpha-2 code of the country.
+     * @param  string  $countryIsoAlpha2Code  The ISO 3166-1 Alpha-2 code of the country.
      */
     public function set(string $countryIsoAlpha2Code): void;
 
@@ -36,8 +37,9 @@ interface CountryServiceContract
      * If the configured default is not found, it falls back to 'US'.
      * Throws a RuntimeException if neither the configured default nor 'US' can be found.
      *
-     * @return \Denprog\Meridian\Models\Country The default Country model.
-     * @throws \RuntimeException If no valid default country can be resolved.
+     * @return Country The default Country model.
+     *
+     * @throws RuntimeException If no valid default country can be resolved.
      */
     public function default(): Country;
 
@@ -45,9 +47,9 @@ interface CountryServiceContract
      * Get all countries.
      * Results can be optionally retrieved from cache.
      *
-     * @param bool $useCache Whether to use cache. Defaults to true.
-     * @param int $cacheTtlMinutes Cache Time-To-Live in minutes. Defaults to 60.
-     * @return \Illuminate\Database\Eloquent\Collection<int, \Denprog\Meridian\Models\Country> A collection of Country models.
+     * @param  bool  $useCache  Whether to use cache. Defaults to true.
+     * @param  int  $cacheTtlMinutes  Cache Time-To-Live in minutes. Defaults to 60.
+     * @return Collection<int, Country> A collection of Country models.
      */
     public function all(bool $useCache = true, int $cacheTtlMinutes = 60): Collection;
 
@@ -55,10 +57,10 @@ interface CountryServiceContract
      * Find a country by its ISO 3166-1 Alpha-2 code.
      * Results can be optionally retrieved from cache.
      *
-     * @param string $isoAlpha2Code The ISO 3166-1 Alpha-2 code.
-     * @param bool $useCache Whether to use cache. Defaults to true.
-     * @param int $cacheTtlMinutes Cache Time-To-Live in minutes. Defaults to 60.
-     * @return \Denprog\Meridian\Models\Country|null The Country model if found, otherwise null.
+     * @param  string  $isoAlpha2Code  The ISO 3166-1 Alpha-2 code.
+     * @param  bool  $useCache  Whether to use cache. Defaults to true.
+     * @param  int  $cacheTtlMinutes  Cache Time-To-Live in minutes. Defaults to 60.
+     * @return Country|null The Country model if found, otherwise null.
      */
     public function findByIsoAlpha2Code(string $isoAlpha2Code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country;
 
@@ -66,10 +68,10 @@ interface CountryServiceContract
      * Find a country by its ISO 3166-1 Alpha-3 code.
      * Results can be optionally retrieved from cache.
      *
-     * @param string $isoAlpha3Code The ISO 3166-1 Alpha-3 code.
-     * @param bool $useCache Whether to use cache. Defaults to true.
-     * @param int $cacheTtlMinutes Cache Time-To-Live in minutes. Defaults to 60.
-     * @return \Denprog\Meridian\Models\Country|null The Country model if found, otherwise null.
+     * @param  string  $isoAlpha3Code  The ISO 3166-1 Alpha-3 code.
+     * @param  bool  $useCache  Whether to use cache. Defaults to true.
+     * @param  int  $cacheTtlMinutes  Cache Time-To-Live in minutes. Defaults to 60.
+     * @return Country|null The Country model if found, otherwise null.
      */
     public function findByIsoAlpha3Code(string $isoAlpha3Code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country;
 
@@ -77,10 +79,10 @@ interface CountryServiceContract
      * Get countries by a specific continent.
      * Results can be optionally retrieved from cache.
      *
-     * @param \Denprog\Meridian\Enums\Continent $continent The continent enum instance.
-     * @param bool $useCache Whether to use cache. Defaults to true.
-     * @param int $cacheTtlMinutes Cache Time-To-Live in minutes. Defaults to 60.
-     * @return \Illuminate\Database\Eloquent\Collection<int, \Denprog\Meridian\Models\Country> A collection of Country models.
+     * @param  Continent  $continent  The continent enum instance.
+     * @param  bool  $useCache  Whether to use cache. Defaults to true.
+     * @param  int  $cacheTtlMinutes  Cache Time-To-Live in minutes. Defaults to 60.
+     * @return Collection<int, Country> A collection of Country models.
      */
     public function findByContinent(Continent $continent, bool $useCache = true, int $cacheTtlMinutes = 60): Collection;
 
@@ -88,10 +90,10 @@ interface CountryServiceContract
      * Find a country by its ID.
      * Results can be optionally retrieved from cache.
      *
-     * @param int $id The country ID.
-     * @param bool $useCache Whether to use cache. Defaults to true.
-     * @param int $cacheTtlMinutes Cache Time-To-Live in minutes. Defaults to 60.
-     * @return \Denprog\Meridian\Models\Country|null The Country model if found, otherwise null.
+     * @param  int  $id  The country ID.
+     * @param  bool  $useCache  Whether to use cache. Defaults to true.
+     * @param  int  $cacheTtlMinutes  Cache Time-To-Live in minutes. Defaults to 60.
+     * @return Country|null The Country model if found, otherwise null.
      */
     public function findById(int $id, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country;
 }

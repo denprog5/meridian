@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Tests\Unit\Commands;
 
 use Denprog\Meridian\Commands\UpdateExchangeRatesCommand;
-use Denprog\Meridian\Services\ExchangeRateService;
+use Denprog\Meridian\Contracts\ExchangeRateServiceContract;
 use Mockery;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 
 beforeEach(function (): void {
-    $this->exchangeRateServiceMock = Mockery::mock(ExchangeRateService::class);
+    $this->exchangeRateServiceMock = Mockery::mock(ExchangeRateServiceContract::class);
 });
 
 it('handles command successfully when rates are updated', function (): void {

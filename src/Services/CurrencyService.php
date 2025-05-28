@@ -23,7 +23,7 @@ final class CurrencyService implements CurrencyServiceContract
     public const string SESSION_CURRENCY_CODE = CurrencyServiceContract::SESSION_CURRENCY_CODE;
 
     /** @var string[] */
-    protected array $configuredActiveCurrencyCodes = [];
+    private array $configuredActiveCurrencyCodes = [];
 
     private ?Currency $currency = null;
 

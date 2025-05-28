@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Commands;
 
-use Denprog\Meridian\Services\ExchangeRateService;
+use Denprog\Meridian\Contracts\ExchangeRateServiceContract;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 
@@ -27,7 +27,7 @@ class UpdateExchangeRatesCommand extends Command
     /**
      * Create a new command instance.
      */
-    public function __construct(protected ExchangeRateService $exchangeRateService)
+    public function __construct(protected ExchangeRateServiceContract $exchangeRateService)
     {
         parent::__construct();
     }

@@ -13,13 +13,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 
-final class ExchangeRateService implements ExchangeRateServiceContract
+final readonly class ExchangeRateService implements ExchangeRateServiceContract
 {
     private const string CACHE_KEY_PREFIX = 'exchange_rate_';
 
-    protected string $configuredBaseCurrency;
+    private string $configuredBaseCurrency;
 
-    public function __construct(protected ExchangeRateProvider $provider)
+    public function __construct(private ExchangeRateProvider $provider)
     {
         $this->configuredBaseCurrency = Config::string('meridian.base_currency_code', 'USD');
     }

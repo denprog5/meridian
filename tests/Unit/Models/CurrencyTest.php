@@ -43,16 +43,16 @@ test('currency does not have countries', function (): void {
 
 test('currency have rates as base', function (): void {
     $currency = Currency::factory()->create(['code' => 'EUR']);
-    ExchangeRate::factory()->count(3)->create(['base_currency_code' => 'EUR', 'target_currency_code' => 'USD']);
-    ExchangeRate::factory()->count(3)->create(['base_currency_code' => 'USD', 'target_currency_code' => 'EUR']);
+    ExchangeRate::factory()->count(2)->create(['base_currency_code' => 'EUR', 'target_currency_code' => 'USD']);
+    ExchangeRate::factory()->count(2)->create(['base_currency_code' => 'USD', 'target_currency_code' => 'EUR']);
 
     $currency->refresh();
 
     $latestRateAsBase = Currency::query()->with('latestRateAsBase')->first();
     $latestRateAsTarget = Currency::query()->with('latestRateAsTarget')->first();
 
-    expect($currency->ratesAsBase()->count())->toBe(3)
-        ->and($currency->ratesAsTarget()->count())->toBe(3)
+    expect($currency->ratesAsBase()->count())->toBe(2)
+        ->and($currency->ratesAsTarget()->count())->toBe(2)
         ->and($latestRateAsBase->latestRateAsBase->base_currency_code)->toBe($currency->code)
         ->and($latestRateAsTarget->latestRateAsTarget->target_currency_code)->toBe($currency->code);
 });

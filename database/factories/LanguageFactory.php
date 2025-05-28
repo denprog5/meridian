@@ -26,12 +26,12 @@ class LanguageFactory extends Factory
      */
     public function definition(): array
     {
-        $langCode = fake()->unique()->toLower(fake()->lexify('??'));
+        $langCode = fake()->unique()->lexify('??');
 
         return [
             'name' => fake()->words(2, true),
             'native_name' => fake()->words(2, true),
-            'code' => $langCode,
+            'code' => mb_strtolower($langCode),
             'text_direction' => fake()->randomElement(['ltr', 'rtl']),
             'is_active' => true,
         ];

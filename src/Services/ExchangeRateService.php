@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Services;
 
-use Denprog\Meridian\Contracts\ExchangeRateProvider;
+use Denprog\Meridian\Contracts\CurrencyServiceContract;
+use Denprog\Meridian\Contracts\ExchangeRateProvider; // This is the ExchangeRateProviderContract
 use Denprog\Meridian\Contracts\ExchangeRateServiceContract;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\ExchangeRate;
@@ -12,16 +13,66 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use LogicException;
+use NumberFormatter;
 
-final readonly class ExchangeRateService implements ExchangeRateServiceContract
+// For currency formatting in later steps
+
+final class ExchangeRateService implements ExchangeRateServiceContract // Removed readonly from class
 {
     private const string CACHE_KEY_PREFIX = 'exchange_rate_';
 
-    private string $configuredBaseCurrency;
+    // Configuration
+    private readonly string $systemBaseCurrencyCode;
 
-    public function __construct(private ExchangeRateProvider $provider)
+    // Lazily loaded properties for performance
+    private ?Currency $systemBaseCurrencyModel = null;
+
+    private ?Currency $activeDisplayCurrencyModel = null;
+
+    private ?float $activeDisplayCurrencyRate = null; // Stores rate from systemBase to activeDisplay
+
+    public function __construct(
+        private readonly CurrencyServiceContract $currencyService,
+        private readonly ExchangeRateProvider $exchangeRateProvider
+    ) {
+        $this->systemBaseCurrencyCode = Config::string('meridian.system_base_currency_code', 'USD');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSystemBaseCurrency(): Currency
     {
-        $this->configuredBaseCurrency = Config::string('meridian.base_currency_code', 'USD');
+        if ($this->systemBaseCurrencyModel instanceof Currency) {
+            return $this->systemBaseCurrencyModel;
+        }
+
+        $currency = $this->currencyService->findByCode($this->systemBaseCurrencyCode);
+
+        if (! $currency instanceof Currency) {
+            throw new LogicException("System base currency '$this->systemBaseCurrencyCode' not found in database.");
+        }
+
+        if (! $currency->enabled) {
+            throw new LogicException("System base currency '$this->systemBaseCurrencyCode' is disabled.");
+        }
+
+        return $this->systemBaseCurrencyModel = $currency;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getActiveDisplayCurrency(): Currency
+    {
+        if ($this->activeDisplayCurrencyModel instanceof Currency) {
+            return $this->activeDisplayCurrencyModel;
+        }
+
+        // The CurrencyService->getActiveDisplayCurrency() is expected to always return a valid, enabled Currency model
+        // (defaulting to system base if no specific user/session currency is set and enabled).
+        return $this->activeDisplayCurrencyModel = $this->currencyService->get();
     }
 
     /**
@@ -37,11 +88,11 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
         ?array $targetCurrencies = null,
         string|Carbon|null $date = null
     ): ?array {
-        $base = $baseCurrency ?? $this->configuredBaseCurrency;
+        $base = $baseCurrency ?? $this->systemBaseCurrencyCode;
         $dateInstance = ($date === null || $date === 'latest') ? Carbon::now() : Carbon::parse($date);
         $dateString = $dateInstance->toDateString();
 
-        $rates = $this->provider->getRates($base, $targetCurrencies, $dateInstance);
+        $rates = $this->exchangeRateProvider->getRates($base, $targetCurrencies, $dateInstance);
 
         if ($rates === null) {
             Log::error("Failed to fetch rates from provider for base $base on $dateString.");
@@ -59,31 +110,77 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
     }
 
     /**
-     * Converts an amount from one currency to another.
-     *
-     * @param  float  $amount  The amount to convert.
-     * @param  string  $fromCurrencySymbolOrCode  The currency code or symbol to convert from.
-     * @param  string  $toCurrencySymbolOrCode  The currency code or symbol to convert to.
-     * @param  string|Carbon|null  $date  The date for the exchange rate. Defaults to latest.
-     * @return float|null The converted amount, or null if conversion is not possible.
+     * {@inheritdoc}
      */
-    public function convert(
-        float $amount,
-        string $fromCurrencySymbolOrCode,
-        string $toCurrencySymbolOrCode,
-        string|Carbon|null $date = null
-    ): ?float {
-        $fromCurrency = $this->_resolveCurrency($fromCurrencySymbolOrCode);
-        $toCurrency = $this->_resolveCurrency($toCurrencySymbolOrCode);
+    public function convert(float $amountInSystemBase, bool $withUnit = false, ?string $locale = null): string|float|null
+    {
+        $activeDisplayCurrency = $this->getActiveDisplayCurrency();
+        $systemBaseCurrency = $this->getSystemBaseCurrency();
+
+        $convertedAmount = $amountInSystemBase;
+
+        if ($activeDisplayCurrency->code !== $systemBaseCurrency->code) {
+            $rate = $this->_getRateToActiveDisplayCurrency();
+            if ($rate === null) {
+                Log::warning('Failed to get exchange rate for active display currency conversion.', [
+                    'system_base' => $systemBaseCurrency->code,
+                    'active_display' => $activeDisplayCurrency->code,
+                ]);
+
+                return null;
+            }
+            $convertedAmount = $amountInSystemBase * $rate;
+        }
+
+        if ($withUnit) {
+            return $this->_formatAmount($convertedAmount, $activeDisplayCurrency, $locale);
+        }
+
+        return round($convertedAmount, $activeDisplayCurrency->decimal_places ?? Config::integer('meridian.formatting.default_decimal_places', 2));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function convertBetween(float $amount, string $fromCurrencyCode, string $toCurrencyCode, bool $withUnit = false, ?string $locale = null, string|Carbon|null $date = null): string|float|null
+    {
+        if ($fromCurrencyCode === $toCurrencyCode) {
+            $toCurrency = $this->_resolveCurrency($toCurrencyCode);
+            if (! $toCurrency instanceof Currency) {
+                Log::warning('Currency not resolved for same-currency conversion formatting.', ['code' => $toCurrencyCode]);
+
+                // Depending on strictness, could return null or unformatted amount.
+                // Returning unformatted amount if currency cannot be resolved for formatting.
+                return $amount;
+            }
+            if ($withUnit) {
+                return $this->_formatAmount($amount, $toCurrency, $locale);
+            }
+
+            return round($amount, $toCurrency->decimal_places ?? Config::integer('meridian.formatting.default_decimal_places', 2));
+        }
+
+        $fromCurrency = $this->_resolveCurrency($fromCurrencyCode);
+        $toCurrency = $this->_resolveCurrency($toCurrencyCode);
 
         if (! $fromCurrency instanceof Currency || ! $toCurrency instanceof Currency) {
-            Log::warning('Currency not resolved for conversion.', ['fromCurrencySymbolOrCode' => $fromCurrencySymbolOrCode, 'toCurrencySymbolOrCode' => $toCurrencySymbolOrCode]);
+            Log::warning('Currency not resolved for conversion.', [
+                'from_code' => $fromCurrencyCode,
+                'to_code' => $toCurrencyCode,
+                'from_resolved' => $fromCurrency instanceof Currency,
+                'to_resolved' => $toCurrency instanceof Currency,
+            ]);
 
             return null;
         }
 
         if (! $fromCurrency->enabled || ! $toCurrency->enabled) {
-            Log::warning('Attempted conversion with disabled currency.', ['from' => $fromCurrency->code, 'to' => $toCurrency->code]);
+            Log::warning('Attempted conversion with disabled currency.', [
+                'from_currency' => $fromCurrency->code,
+                'from_enabled' => $fromCurrency->enabled,
+                'to_currency' => $toCurrency->code,
+                'to_enabled' => $toCurrency->enabled,
+            ]);
 
             return null;
         }
@@ -91,30 +188,37 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
         $rate = $this->getExchangeRate($fromCurrency->code, $toCurrency->code, $date);
 
         if ($rate === null) {
-            Log::warning("Exchange rate not found for $fromCurrency->code to $toCurrency->code for date ".($date ? Carbon::parse($date)->toDateString() : 'latest').'.');
+            $dateString = ($date instanceof Carbon) ? $date->toDateString() : ($date ?? 'latest');
+            Log::warning("Exchange rate not found for $fromCurrency->code to $toCurrency->code for date $dateString.");
 
             return null;
         }
 
-        return round($amount * $rate, $toCurrency->decimal_places ?? 2);
+        $convertedAmount = $amount * $rate;
+
+        if ($withUnit) {
+            return $this->_formatAmount($convertedAmount, $toCurrency, $locale);
+        }
+
+        return round($convertedAmount, $toCurrency->decimal_places ?? Config::integer('meridian.formatting.default_decimal_places', 2));
     }
 
     /**
      * Retrieves available target currency codes for a given base currency and date.
      *
      * @param  string  $baseCurrencyCode  The base currency code.
-     * @param  Carbon|null  $date  The specific date for rates, or null for the latest rates.
-     * @return array<string> An array of target currency codes.
+     * @param  Carbon|string|null  $date  The specific date for rates (Carbon, 'YYYY-MM-DD', or 'latest'), or null for the latest rates.
+     * @return array<int, string> An array of target currency codes.
      */
-    public function getAvailableTargetCurrencies(string $baseCurrencyCode, ?Carbon $date = null): array
+    public function getAvailableTargetCurrencies(string $baseCurrencyCode, Carbon|string|null $date = null): array
     {
         $base = $baseCurrencyCode;
-        $dateInstance = $date ?? Carbon::now();
+        $dateInstance = ($date === null || $date === 'latest') ? Carbon::now() : ($date instanceof Carbon ? $date : Carbon::parse($date));
         $dateString = $dateInstance->toDateString();
 
         $cacheKey = self::CACHE_KEY_PREFIX."available_targets_{$base}_$dateString";
 
-        /** @var array<string> */
+        /** @var array<int,string> */
         return Cache::rememberForever($cacheKey, fn () => ExchangeRate::query()->where('base_currency_code', $base)
             ->where('rate_date', $dateInstance->toDateString())
             ->join('currencies', 'exchange_rates.target_currency_code', '=', 'currencies.code')
@@ -197,15 +301,15 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
             return $calculatedRate;
         }
 
-        // Try converting via the configured base currency (e.g., USD)
-        $configuredBase = $this->configuredBaseCurrency;
-        if ($fromCurrencyCode !== $configuredBase && $toCurrencyCode !== $configuredBase) {
-            // Avoid infinite recursion if configuredBase is one of the from/to currencies in a failed lookup chain
-            $rateFromBaseToSource = $this->getExchangeRate($configuredBase, $fromCurrencyCode, $dateInstance);
-            $rateFromBaseToTarget = $this->getExchangeRate($configuredBase, $toCurrencyCode, $dateInstance);
+        // Try converting via the system's base currency (e.g., USD)
+        $systemBase = $this->systemBaseCurrencyCode;
+        if ($fromCurrencyCode !== $systemBase && $toCurrencyCode !== $systemBase) {
+            // Avoid infinite recursion if systemBase is one of the from/to currencies in a failed lookup chain
+            $fromRate = $this->getExchangeRate($systemBase, $fromCurrencyCode, $dateInstance);
+            $toRate = $this->getExchangeRate($systemBase, $toCurrencyCode, $dateInstance);
 
-            if (! empty($rateFromBaseToSource) && ! empty($rateFromBaseToTarget)) {
-                $calculatedRate = $rateFromBaseToTarget / $rateFromBaseToSource;
+            if (! empty($fromRate) && ! empty($toRate)) {
+                $calculatedRate = $toRate / $fromRate;
                 Cache::put($cacheKey, $calculatedRate, Carbon::now()->addDays(Config::integer('meridian.cache_duration_days.exchange_rates', 7)));
 
                 return $calculatedRate;
@@ -215,6 +319,75 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
         Log::debug("Exchange rate not found or calculable for $fromCurrencyCode to $toCurrencyCode on $rateDateString.");
 
         return null;
+    }
+
+    /**
+     * Helper to get the exchange rate from the system base currency to the active display currency.
+     *
+     * @return float|null The exchange rate, or null if not found.
+     */
+    private function _getRateToActiveDisplayCurrency(): ?float
+    {
+        if ($this->activeDisplayCurrencyRate !== null) {
+            return $this->activeDisplayCurrencyRate;
+        }
+
+        $systemBase = $this->getSystemBaseCurrency();
+        $activeDisplay = $this->getActiveDisplayCurrency();
+
+        if ($systemBase->code === $activeDisplay->code) {
+            $this->activeDisplayCurrencyRate = 1.0;
+
+            return 1.0;
+        }
+
+        // Use 'latest' as we are dealing with current display context
+        $rate = $this->getExchangeRate($systemBase->code, $activeDisplay->code, 'latest');
+
+        if ($rate === null) {
+            Log::error('Critical: Could not retrieve exchange rate between system base and active display currency.', [
+                'from' => $systemBase->code,
+                'to' => $activeDisplay->code,
+            ]);
+
+            return null;
+        }
+
+        return $this->activeDisplayCurrencyRate = $rate;
+    }
+
+    /**
+     * Formats an amount with the given currency's symbol and decimal places.
+     *
+     * @param  float  $amount  The amount to format.
+     * @param  Currency  $currency  The currency model for formatting rules.
+     * @param  string|null  $locale  Optional locale for formatting (e.g., 'en_US', 'de_DE'). Defaults to app locale.
+     * @return string The formatted currency string.
+     */
+    private function _formatAmount(float $amount, Currency $currency, ?string $locale = null): string
+    {
+        $currentLocale = $locale ?? Config::string('app.locale', 'en_US');
+        $formatter = new NumberFormatter($currentLocale, NumberFormatter::CURRENCY);
+        // Ensure we use the currency's specific decimal places if available
+        $formatter->setAttribute(NumberFormatter::FRACTION_DIGITS, $currency->decimal_places ?? Config::integer('meridian.formatting.default_decimal_places', 2));
+
+        // Attempt to format with the currency code. If it fails (e.g. due to locale not supporting the code directly in symbol position),
+        // fallback to a more generic formatting or append the code.
+        $formatted = $formatter->formatCurrency($amount, $currency->code);
+
+        if ($formatted === false) {
+            // Fallback for robust formatting if formatCurrency fails for some locales/currency code combos
+            $formatter = new NumberFormatter($currentLocale, NumberFormatter::DECIMAL);
+            $formatter->setAttribute(NumberFormatter::FRACTION_DIGITS, $currency->decimal_places ?? Config::integer('meridian.formatting.default_decimal_places', 2));
+            $formattedAmount = $formatter->format($amount) ?: (string) $amount;
+
+            // Determine if symbol should be prefixed or suffix based on typical conventions or config
+            // This is a simplified heuristic; true localization is complex.
+            // For now, just append code if symbol is not already present from a failed formatCurrency.
+            return $currency->symbol.' '.$formattedAmount; // Or $formattedAmount . ' ' . $currency->code;
+        }
+
+        return $formatted;
     }
 
     /**

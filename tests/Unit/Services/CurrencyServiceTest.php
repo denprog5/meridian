@@ -121,8 +121,8 @@ it('list returns currencies based on configured active codes and only enabled on
     $activeCurrencies = $service->list(); // No cache
 
     expect($activeCurrencies)->toBeInstanceOf(Collection::class)
-        ->and($activeCurrencies)->toHaveCount(2)
-        ->and($activeCurrencies->pluck('code')->all())->toBe(['EUR', 'USD']);
+        ->and($activeCurrencies)->toHaveCount(3)
+        ->and($activeCurrencies->pluck('code')->all())->toBe(['EUR', 'GBP', 'USD']);
 });
 
 it('list returns default active currencies if config is empty and only enabled ones', function (): void {

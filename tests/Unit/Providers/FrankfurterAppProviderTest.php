@@ -61,7 +61,7 @@ describe('Successful Rate Fetching', function (): void {
         expect($rates)->toBe($expectedRates);
 
         Http::assertSent(fn (Request $request): bool => $request->url() === $expectedUrl &&
-               $request->data() === ['from' => $baseCurrency]);
+            $request->data() === ['from' => $baseCurrency]);
     });
 
     it('fetches rates for a specific date and target currencies successfully', function (): void {
@@ -87,7 +87,7 @@ describe('Successful Rate Fetching', function (): void {
             $expectedParams = ['from' => $baseCurrency, 'to' => implode(',', $targetCurrencies)];
 
             return $request->url() === $expectedUrl &&
-                   $request->data() === $expectedParams;
+                $request->data() === $expectedParams;
         });
     });
 });
@@ -136,7 +136,7 @@ describe('Error and Failure Handling', function (): void {
 
         Log::shouldReceive('error')->once()
             ->withArgs(fn ($message, $context): bool => str_contains($message, 'Exception while fetching rates') &&
-                   isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'));
+                isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'));
 
         $provider = new FrankfurterAppProvider();
         $rates = $provider->getRates($baseCurrency, $targetCurrencies);

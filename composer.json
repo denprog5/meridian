@@ -11,14 +11,14 @@
     ],
     "require": {
         "php": "^8.3.0",
-        "laravel/framework": "^11.45.0|^12.0"
+        "laravel/framework": "^12.0"
     },
     "require-dev": {
         "laravel/pint": "^1.22.1",
         "orchestra/testbench": "^10.0",
         "pestphp/pest": "^4.0.0",
         "pestphp/pest-plugin-type-coverage": "^4.0.0",
-        "phpstan/phpstan": "^2.1.16",
+        "larastan/larastan": "^3.0",
         "rector/rector": "^2.0.16",
         "symfony/var-dumper": "^7.2.6"
     },

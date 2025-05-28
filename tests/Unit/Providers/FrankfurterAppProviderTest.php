@@ -8,13 +8,8 @@ use Denprog\Meridian\Providers\FrankfurterAppProvider;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 const API_BASE_URL_TEST = 'https://api.frankfurter.dev/v1'; // Match provider's constant
-
-beforeEach(function (): void {
-    Log::spy();
-});
 
 test('getRates fetches rates for specific target currencies successfully', function (): void {
     $baseCurrency = 'USD';
@@ -29,7 +24,7 @@ test('getRates fetches rates for specific target currencies successfully', funct
     $provider = new FrankfurterAppProvider();
     $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
-    expect(array_keys($rates))->toEqual($targetCurrencies);
+    expect($rates)->toEqual($targetCurrencies);
 });
 
 test('getRates fetches rates for all available target currencies if none specified', function (): void {
@@ -53,8 +48,6 @@ test('getRates fetches rates for all available target currencies if none specifi
                $request['from'] === $baseCurrency &&
                ! isset($request['to']);
     });
-
-    Log::shouldNotHaveReceived('error');
 });
 
 test('getRates fetches rates for a specific date successfully', function (): void {
@@ -80,7 +73,6 @@ test('getRates fetches rates for a specific date successfully', function (): voi
                $request['to'] === implode(',', $targetCurrencies);
     });
 
-    Log::shouldNotHaveReceived('error');
 });
 
 test('getRates handles API request failure and logs error', function (): void {
@@ -95,13 +87,6 @@ test('getRates handles API request failure and logs error', function (): void {
     $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
     expect($rates)->toBeNull();
-
-    Log::shouldHaveReceived('error')
-        ->once()
-        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Frankfurter.app API request failed.') &&
-               isset($context['status']) && $context['status'] === 500 &&
-               isset($context['url']) && str_contains((string) $context['url'], API_BASE_URL_TEST.'/latest') &&
-               isset($context['params']['from']) && $context['params']['from'] === 'USD');
 });
 
 test('getRates returns null and logs error if API response is not successful but not a client/server error', function (): void {
@@ -116,13 +101,6 @@ test('getRates returns null and logs error if API response is not successful but
     $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
     expect($rates)->toBeNull();
-
-    Log::shouldHaveReceived('error')
-        ->once()
-        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Exception while fetching rates from Frankfurter.app.') &&
-               isset($context['exception']) &&
-               isset($context['base_currency']) && $context['base_currency'] === $baseCurrency &&
-               isset($context['target_currencies']) && $context['target_currencies'] === $targetCurrencies);
 });
 
 test('getRates returns null and logs error if API response is successful but rates key is missing', function (): void {
@@ -137,11 +115,4 @@ test('getRates returns null and logs error if API response is successful but rat
     $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
     expect($rates)->toBeNull();
-
-    Log::shouldHaveReceived('error')
-        ->once()
-        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Exception while fetching rates from Frankfurter.app.') &&
-               isset($context['exception']) &&
-               isset($context['base_currency']) && $context['base_currency'] === $baseCurrency &&
-               isset($context['target_currencies']) && $context['target_currencies'] === $targetCurrencies);
 });

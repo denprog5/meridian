@@ -5,114 +5,142 @@ declare(strict_types=1);
 namespace Tests\Unit\Providers;
 
 use Denprog\Meridian\Providers\FrankfurterAppProvider;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
-const API_BASE_URL_TEST = 'https://api.frankfurter.dev/v1'; // Match provider's constant
+const API_BASE_URL_FRANKFURTER_TEST = 'https://api.frankfurter.dev';
 
-test('getRates fetches rates for specific target currencies successfully', function (): void {
-    $baseCurrency = 'USD';
-    $targetCurrencies = ['EUR', 'GBP'];
-    $date = Carbon::now();
-    $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8];
+covers(FrankfurterAppProvider::class);
 
-    Http::fake([
-        API_BASE_URL_TEST.'/latest?symbols=EUR,GBP&base=USD' => Http::response(['base' => $baseCurrency, 'date' => $date->toDateString(), 'rates' => $expectedRates]),
-    ]);
-
-    $provider = new FrankfurterAppProvider();
-    $rates = $provider->getRates($baseCurrency, $targetCurrencies);
-
-    expect(array_keys($rates))->toEqual($targetCurrencies);
+beforeEach(function (): void {
+    Http::preventStrayRequests();
 });
 
-test('getRates fetches rates for all available target currencies if none specified', function (): void {
-    $baseCurrency = 'USD';
-    $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8, 'JPY' => 110];
-    $date = Carbon::now();
+describe('Successful Rate Fetching', function (): void {
+    it('fetches rates for specific target currencies for the latest date', function (): void {
+        $baseCurrency = 'USD';
+        $targetCurrencies = ['EUR', 'GBP'];
+        $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8];
+        $dateString = Carbon::now()->toDateString(); // Used in the faked response
 
-    Http::fake([
-        API_BASE_URL_TEST.'/latest*' => Http::response(['base' => $baseCurrency, 'date' => $date->toDateString(), 'rates' => $expectedRates]),
-    ]);
+        $endpointUrl = API_BASE_URL_FRANKFURTER_TEST.'/v1/latest';
+        $queryParams = ['from' => $baseCurrency, 'to' => implode(',', $targetCurrencies)];
+        $expectedBuiltUrl = $endpointUrl.'?'.http_build_query($queryParams);
 
-    $provider = new FrankfurterAppProvider();
-    $rates = $provider->getRates($baseCurrency);
+        Http::fake([
+            $expectedBuiltUrl => Http::response(['base' => $baseCurrency, 'date' => $dateString, 'rates' => $expectedRates]),
+        ]);
 
-    expect($rates)->toBe($expectedRates);
+        $provider = new FrankfurterAppProvider();
+        $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
-    Http::assertSent(function ($request) use ($baseCurrency): bool {
-        $expectedUrl = API_BASE_URL_TEST.'/latest?from='.$baseCurrency;
+        expect($rates)->toBe($expectedRates);
 
-        return $request->url() === $expectedUrl &&
-               $request['from'] === $baseCurrency &&
-               ! isset($request['to']);
+        Http::assertSent(fn (Request $request): bool => $request->url() === $expectedBuiltUrl);
+    });
+
+    it('fetches rates for all available target currencies if none specified for the latest date', function (): void {
+        $baseCurrency = 'USD';
+        $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8, 'JPY' => 110];
+        $dateString = Carbon::now()->toDateString();
+
+        $endpointUrl = API_BASE_URL_FRANKFURTER_TEST.'/v1/latest';
+        $queryParams = ['from' => $baseCurrency];
+        $expectedUrl = $endpointUrl.'?'.http_build_query($queryParams);
+
+        Http::fake([
+            $expectedUrl => Http::response(['base' => $baseCurrency, 'date' => $dateString, 'rates' => $expectedRates]),
+        ]);
+
+        $provider = new FrankfurterAppProvider();
+        $rates = $provider->getRates($baseCurrency);
+
+        expect($rates)->toBe($expectedRates);
+
+        Http::assertSent(fn (Request $request): bool => $request->url() === $expectedUrl &&
+               $request->data() === ['from' => $baseCurrency]);
+    });
+
+    it('fetches rates for a specific date and target currencies successfully', function (): void {
+        $baseCurrency = 'USD';
+        $targetCurrencies = ['EUR'];
+        $date = Carbon::parse('2023-01-15');
+        $expectedRates = ['EUR' => 0.85];
+
+        $endpointUrl = API_BASE_URL_FRANKFURTER_TEST.'/v1/'.$date->toDateString();
+        $queryParams = ['from' => $baseCurrency, 'to' => implode(',', $targetCurrencies)];
+        $expectedUrl = $endpointUrl.'?'.http_build_query($queryParams);
+
+        Http::fake([
+            $expectedUrl => Http::response(['base' => $baseCurrency, 'date' => $date->toDateString(), 'rates' => $expectedRates]),
+        ]);
+
+        $provider = new FrankfurterAppProvider();
+        $rates = $provider->getRates($baseCurrency, $targetCurrencies, $date);
+
+        expect($rates)->toBe($expectedRates);
+
+        Http::assertSent(function (Request $request) use ($baseCurrency, $targetCurrencies, $expectedUrl): bool {
+            $expectedParams = ['from' => $baseCurrency, 'to' => implode(',', $targetCurrencies)];
+
+            return $request->url() === $expectedUrl &&
+                   $request->data() === $expectedParams;
+        });
     });
 });
 
-test('getRates fetches rates for a specific date successfully', function (): void {
-    $baseCurrency = 'USD';
-    $targetCurrencies = ['EUR'];
-    $date = Carbon::parse('2023-01-15');
-    $expectedRates = ['EUR' => 0.85];
+describe('Error and Failure Handling', function (): void {
+    test('getRates returns null and logs error for various API issues', function (callable $fakeResponseFactory, string $expectedUrlPattern): void {
+        $baseCurrency = 'USD';
+        $targetCurrencies = ['EUR'];
 
-    Http::fake([
-        API_BASE_URL_TEST.'/'.$date->toDateString().'*' => Http::response(['base' => $baseCurrency, 'date' => $date->toDateString(), 'rates' => $expectedRates]),
+        Http::fake([
+            $expectedUrlPattern => $fakeResponseFactory(),
+        ]);
+
+        Log::shouldReceive('error')->once();
+
+        $provider = new FrankfurterAppProvider();
+        $rates = $provider->getRates($baseCurrency, $targetCurrencies);
+
+        expect($rates)->toBeNull();
+
+        Http::assertSent(fn (Request $request): bool => $request->url() === $expectedUrlPattern);
+    })->with([
+        'API request failure (500)' => [
+            fn () => Http::response(null, 500),
+            API_BASE_URL_FRANKFURTER_TEST.'/v1/latest?from=USD&to=EUR',
+        ],
+        'API non-success (300)' => [
+            fn () => Http::response(['message' => 'Some other issue'], 300),
+            API_BASE_URL_FRANKFURTER_TEST.'/v1/latest?from=USD&to=EUR',
+        ],
+        'API response is invalid JSON string' => [
+            fn () => Http::response('invalid json string'),
+            API_BASE_URL_FRANKFURTER_TEST.'/v1/latest?from=USD&to=EUR',
+        ],
+        'API response is valid JSON but missing rates key' => [
+            fn () => Http::response(['base' => 'USD', 'date' => Carbon::now()->toDateString()]),
+            API_BASE_URL_FRANKFURTER_TEST.'/v1/latest?from=USD&to=EUR',
+        ],
     ]);
 
-    $provider = new FrankfurterAppProvider();
-    $rates = $provider->getRates($baseCurrency, $targetCurrencies, $date);
+    it('getRates returns null and logs error on client exception (e.g., timeout)', function (): void {
+        $baseCurrency = 'USD';
+        $targetCurrencies = ['EUR'];
 
-    expect($rates)->toBe($expectedRates);
+        Http::shouldReceive('timeout->get')->once()->andThrow(new ConnectionException('Simulated connection timeout'));
 
-    Http::assertSent(function (Request $request) use ($baseCurrency, $targetCurrencies, $date): bool {
-        $expectedUrl = API_BASE_URL_TEST.'/'.$date->toDateString().'?from='.$baseCurrency.'&to='.implode(',', $targetCurrencies);
+        Log::shouldReceive('error')->once()
+            ->withArgs(fn ($message, $context): bool => str_contains($message, 'Exception while fetching rates') &&
+                   isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'));
 
-        return $request->url() === $expectedUrl &&
-               $request['from'] === $baseCurrency &&
-               $request['to'] === implode(',', $targetCurrencies);
+        $provider = new FrankfurterAppProvider();
+        $rates = $provider->getRates($baseCurrency, $targetCurrencies);
+
+        expect($rates)->toBeNull();
     });
-
-});
-
-test('getRates handles API request failure and logs error', function (): void {
-    $baseCurrency = 'USD';
-    $targetCurrencies = ['EUR'];
-
-    Http::fake([
-        API_BASE_URL_TEST.'/latest*' => Http::response(null, 500),
-    ]);
-
-    $provider = new FrankfurterAppProvider();
-    $rates = $provider->getRates($baseCurrency, $targetCurrencies);
-
-    expect($rates)->toBeNull();
-});
-
-test('getRates returns null and logs error if API response is not successful but not a client/server error', function (): void {
-    $baseCurrency = 'USD';
-    $targetCurrencies = ['EUR'];
-
-    Http::fake([
-        API_BASE_URL_TEST.'/latest*' => Http::response(['message' => 'Some other issue'], 300),
-    ]);
-
-    $provider = new FrankfurterAppProvider();
-    $rates = $provider->getRates($baseCurrency, $targetCurrencies);
-
-    expect($rates)->toBeNull();
-});
-
-test('getRates returns null and logs error if API response is successful but rates key is missing', function (): void {
-    $baseCurrency = 'USD';
-    $targetCurrencies = ['EUR'];
-
-    Http::fake([
-        API_BASE_URL_TEST.'/latest*' => Http::response('invalid json string'),
-    ]);
-
-    $provider = new FrankfurterAppProvider();
-    $rates = $provider->getRates($baseCurrency, $targetCurrencies);
-
-    expect($rates)->toBeNull();
 });

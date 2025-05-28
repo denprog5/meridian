@@ -88,7 +88,7 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
             return null;
         }
 
-        $rate = $this->_getRate($fromCurrency->code, $toCurrency->code, $date);
+        $rate = $this->getExchangeRate($fromCurrency->code, $toCurrency->code, $date);
 
         if ($rate === null) {
             Log::warning("Exchange rate not found for $fromCurrency->code to $toCurrency->code for date ".($date ? Carbon::parse($date)->toDateString() : 'latest').'.');
@@ -125,33 +125,38 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
     }
 
     /**
-     * Stores or updates an exchange rate in the database and cache.
+     * Retrieves exchange rates for multiple target currencies against a single base currency.
+     *
+     * @param  string  $baseCurrencyCode  The base currency code.
+     * @param  array<string>  $targetCurrencyCodes  An array of target currency codes.
+     * @param  string|Carbon|null  $date  The date for the exchange rates ('latest', 'YYYY-MM-DD', or Carbon instance). Defaults to latest.
+     * @return array<string, float> An associative array of target currency codes to their rates. Rates that cannot be found are omitted.
      */
-    private function _storeRate(string $baseCurrencyCode, string $targetCurrencyCode, float $rate, Carbon $date): void
+    public function getExchangeRates(string $baseCurrencyCode, array $targetCurrencyCodes, string|Carbon|null $date = null): array
     {
-        $rateDateString = $date->toDateString();
+        $rates = [];
+        $dateInstance = ($date === null || $date === 'latest') ? Carbon::now() : Carbon::parse($date);
 
-        ExchangeRate::query()->updateOrCreate(
-            [
-                'base_currency_code' => $baseCurrencyCode,
-                'target_currency_code' => $targetCurrencyCode,
-                'rate_date' => $rateDateString,
-            ],
-            ['rate' => $rate]
-        );
+        foreach ($targetCurrencyCodes as $targetCurrencyCode) {
+            $rate = $this->getExchangeRate($baseCurrencyCode, $targetCurrencyCode, $dateInstance);
+            if ($rate !== null) {
+                $rates[$targetCurrencyCode] = $rate;
+            }
+        }
 
-        $cacheKey = self::CACHE_KEY_PREFIX."{$baseCurrencyCode}_{$targetCurrencyCode}_$rateDateString";
-        Cache::put($cacheKey, $rate, Carbon::now()->addDays(Config::integer('meridian.cache_duration_days.exchange_rates', 7)));
-
-        $inverseCacheKey = self::CACHE_KEY_PREFIX."{$targetCurrencyCode}_{$baseCurrencyCode}_$rateDateString";
-        Cache::forget($inverseCacheKey);
+        return $rates;
     }
 
     /**
      * Retrieves an exchange rate.
-     * Tries direct, inverse, then via USD if necessary.
+     * Tries direct, inverse, then via the configured base currency if necessary.
+     *
+     * @param  string  $fromCurrencyCode  The currency code to convert from.
+     * @param  string  $toCurrencyCode  The currency code to convert to.
+     * @param  string|Carbon|null  $date  The date for the exchange rate ('latest', 'YYYY-MM-DD', or Carbon instance). Defaults to latest.
+     * @return float|null The exchange rate, or null if not found/calculable.
      */
-    private function _getRate(string $fromCurrencyCode, string $toCurrencyCode, string|Carbon|null $date = null): ?float
+    public function getExchangeRate(string $fromCurrencyCode, string $toCurrencyCode, string|Carbon|null $date = null): ?float
     {
         if ($fromCurrencyCode === $toCurrencyCode) {
             return 1.0;
@@ -192,10 +197,12 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
             return $calculatedRate;
         }
 
+        // Try converting via the configured base currency (e.g., USD)
         $configuredBase = $this->configuredBaseCurrency;
         if ($fromCurrencyCode !== $configuredBase && $toCurrencyCode !== $configuredBase) {
-            $rateFromBaseToSource = $this->_getRate($configuredBase, $fromCurrencyCode, $dateInstance);
-            $rateFromBaseToTarget = $this->_getRate($configuredBase, $toCurrencyCode, $dateInstance);
+            // Avoid infinite recursion if configuredBase is one of the from/to currencies in a failed lookup chain
+            $rateFromBaseToSource = $this->getExchangeRate($configuredBase, $fromCurrencyCode, $dateInstance);
+            $rateFromBaseToTarget = $this->getExchangeRate($configuredBase, $toCurrencyCode, $dateInstance);
 
             if (! empty($rateFromBaseToSource) && ! empty($rateFromBaseToTarget)) {
                 $calculatedRate = $rateFromBaseToTarget / $rateFromBaseToSource;
@@ -205,9 +212,32 @@ final readonly class ExchangeRateService implements ExchangeRateServiceContract
             }
         }
 
-        Log::warning("Rate not found or calculable for $fromCurrencyCode to $toCurrencyCode on $rateDateString.");
+        Log::debug("Exchange rate not found or calculable for $fromCurrencyCode to $toCurrencyCode on $rateDateString.");
 
         return null;
+    }
+
+    /**
+     * Stores or updates an exchange rate in the database and cache.
+     */
+    private function _storeRate(string $baseCurrencyCode, string $targetCurrencyCode, float $rate, Carbon $date): void
+    {
+        $rateDateString = $date->toDateString();
+
+        ExchangeRate::query()->updateOrCreate(
+            [
+                'base_currency_code' => $baseCurrencyCode,
+                'target_currency_code' => $targetCurrencyCode,
+                'rate_date' => $rateDateString,
+            ],
+            ['rate' => $rate]
+        );
+
+        $cacheKey = self::CACHE_KEY_PREFIX."{$baseCurrencyCode}_{$targetCurrencyCode}_$rateDateString";
+        Cache::put($cacheKey, $rate, Carbon::now()->addDays(Config::integer('meridian.cache_duration_days.exchange_rates', 7)));
+
+        $inverseCacheKey = self::CACHE_KEY_PREFIX."{$targetCurrencyCode}_{$baseCurrencyCode}_$rateDateString";
+        Cache::forget($inverseCacheKey);
     }
 
     /**

@@ -12,7 +12,7 @@ use Throwable;
 
 class FrankfurterAppProvider implements ExchangeRateProvider
 {
-    private const string API_BASE_URL = 'https://api.frankfurter.dev/v1';
+    private const string API_BASE_URL = 'https://api.frankfurter.dev';
 
     /**
      * Get exchange rates from a base currency to target currencies for a specific date.
@@ -25,7 +25,7 @@ class FrankfurterAppProvider implements ExchangeRateProvider
     public function getRates(string $baseCurrencyCode, ?array $targetCurrencyCodes = null, ?Carbon $date = null): ?array
     {
         $endpoint = $date instanceof Carbon ? $date->toDateString() : 'latest';
-        $url = self::API_BASE_URL."/$endpoint";
+        $url = self::API_BASE_URL."/v1/$endpoint";
 
         $queryParams = ['from' => $baseCurrencyCode];
         if ($targetCurrencyCodes !== null && $targetCurrencyCodes !== []) {

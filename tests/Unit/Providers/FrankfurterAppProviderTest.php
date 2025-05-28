@@ -24,7 +24,7 @@ test('getRates fetches rates for specific target currencies successfully', funct
     $provider = new FrankfurterAppProvider();
     $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
-    expect($rates)->toEqual($targetCurrencies);
+    expect(array_keys($rates))->toEqual($targetCurrencies);
 });
 
 test('getRates fetches rates for all available target currencies if none specified', function (): void {

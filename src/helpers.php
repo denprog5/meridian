@@ -54,6 +54,7 @@ if (! function_exists('exchangeRate')) {
      */
     function exchangeRate(): ExchangeRateService
     {
+        /** @var ExchangeRateService */
         return app(ExchangeRateService::class);
     }
 }

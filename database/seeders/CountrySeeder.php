@@ -25,18 +25,11 @@ class CountrySeeder extends Seeder
 
             return;
         }
+
+        /** @var array<array<string, mixed>> $allCountriesData */
         $allCountriesData = json_decode($jsonData, true);
 
-        if (! is_array($allCountriesData)) {
-            $this->command->error('File not found: '.$jsonFilePath);
-
-            return;
-        }
-
         foreach ($allCountriesData as $countryData) {
-            if (! is_array($countryData)) {
-                continue;
-            }
             if (! empty($countryData['continent_code']) && is_string($countryData['continent_code'])) {
                 $continent = Continent::tryFrom($countryData['continent_code']);
                 if ($continent === null) {

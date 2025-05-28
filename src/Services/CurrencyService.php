@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Services;
 
+use Denprog\Meridian\Contracts\CurrencyServiceContract;
 use Denprog\Meridian\Models\Currency;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -17,9 +18,9 @@ use Illuminate\Support\Facades\Session;
  * This service provides methods to retrieve and manage currency data,
  * with built-in caching support for improved performance.
  */
-class CurrencyService
+final class CurrencyService implements CurrencyServiceContract
 {
-    public const string SESSION_CURRENCY_CODE = 'meridian.currency_code';
+    public const string SESSION_CURRENCY_CODE = CurrencyServiceContract::SESSION_CURRENCY_CODE;
 
     /** @var string[] */
     protected array $configuredActiveCurrencyCodes = [];
@@ -105,7 +106,7 @@ class CurrencyService
             $currency = $this->findByCode($currencyCode);
         }
 
-        if (! $currency) {
+        if (! $currency || ! $currency->enabled) {
             $currency = $this->baseCurrency();
         }
 

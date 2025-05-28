@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Denprog\Meridian\Services;
 
 use Denprog\Meridian\Contracts\ExchangeRateProvider;
+use Denprog\Meridian\Contracts\ExchangeRateServiceContract;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\ExchangeRate;
 use Illuminate\Support\Carbon;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 
-class ExchangeRateService
+final class ExchangeRateService implements ExchangeRateServiceContract
 {
     private const string CACHE_KEY_PREFIX = 'exchange_rate_';
 

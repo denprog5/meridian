@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
+use Denprog\Meridian\Contracts\ExchangeRateServiceContract;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\ExchangeRate;
-use Denprog\Meridian\Services\ExchangeRateService;
 use Illuminate\Support\Facades\Config;
 
 beforeEach(function (): void {
@@ -28,7 +28,7 @@ describe('ExchangeRateService - Rate Management', function (): void {
     });
 
     it('updates exchange rates from provider', function (): void {
-        $this->service = app(ExchangeRateService::class);
+        $this->service = app(ExchangeRateServiceContract::class);
 
         $result = $this->service->fetchAndStoreRatesFromProvider(null, ['EUR', 'GBP']);
         expect(count($result))->toBe(2);

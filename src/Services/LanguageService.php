@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Services;
 
+use Denprog\Meridian\Contracts\LanguageServiceContract;
 use Denprog\Meridian\Models\Language;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 
-class LanguageService
+final class LanguageService implements LanguageServiceContract
 {
-    public const string SESSION_KEY_USER_LANGUAGE = 'meridian.user_language_code';
+    public const string SESSION_KEY_USER_LANGUAGE = LanguageServiceContract::SESSION_KEY_USER_LANGUAGE;
 
     private ?Language $language = null;
 

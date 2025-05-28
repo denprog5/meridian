@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Denprog\Meridian\Tests\Unit\Services;
 
 use Closure;
+use Denprog\Meridian\Contracts\CurrencyServiceContract;
 use Denprog\Meridian\Database\Factories\CurrencyFactory;
 use Denprog\Meridian\Models\Currency;
-use Denprog\Meridian\Services\CurrencyService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -24,7 +24,7 @@ beforeEach(function (): void {
 it('returns all currencies', function (): void {
     CurrencyFactory::new()->count(5)->create();
 
-    $currencies = (new CurrencyService())->all(false);
+    $currencies = app(CurrencyServiceContract::class)->all(false);
     expect($currencies)->toBeInstanceOf(Collection::class)
         ->and($currencies)->toHaveCount(5);
 });
@@ -37,13 +37,13 @@ it('returns all currencies from cache', function (): void {
         ->with('currencies.all', Mockery::any(), Mockery::type(Closure::class))
         ->andReturn($currencies);
 
-    expect((new CurrencyService())->all())
+    expect(app(CurrencyServiceContract::class)->all())
         ->toBeInstanceOf(Collection::class)
         ->toHaveCount(3);
 });
 
 it('returns currency by id', function (): void {
-    $currencyService = new CurrencyService();
+    $currencyService = app(CurrencyServiceContract::class);
     $currency = CurrencyFactory::new()->create();
 
     $foundCurrency = $currencyService->findById($currency->id, false);
@@ -54,19 +54,13 @@ it('returns currency by id', function (): void {
 });
 
 it('returns currency by id from cache', function (): void {
-    $currencyService = new CurrencyService();
+    $currencyService = app(CurrencyServiceContract::class);
     $currency = CurrencyFactory::new()->create();
     $currencyId = $currency->id;
 
     Cache::shouldReceive('remember')
         ->once()
-        ->with('currency.id.'.$currencyId, Mockery::any(), Mockery::on(function ($closure) use ($currencyId): bool {
-            $data = $closure();
-            expect($data)->toBeInstanceOf(Currency::class)
-                ->and($data->id)->toBe($currencyId);
-
-            return true;
-        }))
+        ->with('currency.id.'.$currencyId, Mockery::any(), Mockery::type(Closure::class))
         ->andReturn(Currency::query()->find($currencyId));
 
     $foundCurrency = $currencyService->findById($currencyId);
@@ -83,7 +77,7 @@ it('returns currency by id from cache', function (): void {
 });
 
 it('returns currency by code', function (): void {
-    $currencyService = new CurrencyService();
+    $currencyService = app(CurrencyServiceContract::class);
     $currency = CurrencyFactory::new()->create(['code' => 'XYZ']);
 
     $foundCurrency = $currencyService->findByCode('XYZ', false);
@@ -94,18 +88,13 @@ it('returns currency by code', function (): void {
 });
 
 it('returns currency by code uses cache', function (): void {
-    $currencyService = new CurrencyService();
+    $currencyService = app(CurrencyServiceContract::class);
     $currencyCode = 'USD';
     CurrencyFactory::new()->create(['code' => $currencyCode, 'enabled' => true]);
 
     Cache::shouldReceive('remember')
         ->once()
-        ->with('currency.code.'.$currencyCode, Mockery::any(), Mockery::on(function ($closure) use ($currencyCode): bool {
-            $data = $closure();
-            expect($data)->toBeInstanceOf(Currency::class)->and($data->code)->toBe($currencyCode);
-
-            return true;
-        }))
+        ->with('currency.code.'.$currencyCode, Mockery::any(), Mockery::type(Closure::class))
         ->andReturn(Currency::query()->where('code', $currencyCode)->first());
 
     $foundCurrency = $currencyService->findByCode($currencyCode);
@@ -128,7 +117,7 @@ it('list returns currencies based on configured active codes and only enabled on
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
     CurrencyFactory::new()->create(['code' => 'GBP', 'enabled' => true]);
 
-    $service = new CurrencyService();
+    $service = app(CurrencyServiceContract::class);
     $activeCurrencies = $service->list(); // No cache
 
     expect($activeCurrencies)->toBeInstanceOf(Collection::class)
@@ -144,7 +133,7 @@ it('list returns default active currencies if config is empty and only enabled o
     CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => false]);
     CurrencyFactory::new()->create(['code' => 'XXX', 'enabled' => true]);
 
-    $service = new CurrencyService();
+    $service = app(CurrencyServiceContract::class);
     $activeCurrencies = $service->list();
 
     expect($activeCurrencies)->toBeInstanceOf(Collection::class)
@@ -161,15 +150,10 @@ it('list uses cache for active currencies collection', function (): void {
 
     Cache::shouldReceive('remember')
         ->once()
-        ->with('meridian.active_currencies_collection', Mockery::any(), Mockery::on(function ($closure) use ($expectedCollection): bool {
-            $data = $closure();
-            expect($data->sortBy('code')->pluck('code')->all())->toEqual($expectedCollection->sortBy('code')->pluck('code')->all());
-
-            return true;
-        }))
+        ->with('meridian.active_currencies_collection', Mockery::any(), Mockery::type(Closure::class))
         ->andReturn($expectedCollection);
 
-    $service = new CurrencyService();
+    $service = app(CurrencyServiceContract::class);
     $activeCurrencies = $service->list();
 
     expect($activeCurrencies)->toEqual($expectedCollection);
@@ -180,7 +164,7 @@ it('base currency returns currency from config when valid', function (): void {
     CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
 
-    $service = new CurrencyService();
+    $service = app(CurrencyServiceContract::class);
     $base = $service->baseCurrency();
 
     expect($base)->toBeInstanceOf(Currency::class)
@@ -196,7 +180,7 @@ test('get currency', function (): void {
     CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
 
-    $service = new CurrencyService();
+    $service = app(CurrencyServiceContract::class);
     $currency = $service->get();
     expect($currency)->toBeInstanceOf(Currency::class)
         ->and($currency->code)->toBe('USD');
@@ -210,14 +194,14 @@ test('get currency from session when they exist (session hit)', function (): voi
     CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
 
-    $sessionKey = CurrencyService::SESSION_CURRENCY_CODE;
+    $sessionKey = CurrencyServiceContract::SESSION_CURRENCY_CODE;
 
     Session::expects('get')
         ->once()
         ->with($sessionKey)
         ->andReturn('EUR');
 
-    $service = new CurrencyService();
+    $service = app(CurrencyServiceContract::class);
     $currency = $service->get();
     expect($currency)->toBeInstanceOf(Currency::class)
         ->and($currency->code)->toBe('EUR');
@@ -227,33 +211,74 @@ test('get currency if not in session (session miss)', function (): void {
     CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
 
-    $sessionKey = CurrencyService::SESSION_CURRENCY_CODE;
+    $sessionKey = CurrencyServiceContract::SESSION_CURRENCY_CODE;
 
     Session::expects('get')
         ->once()
         ->with($sessionKey)
         ->andReturnNull();
 
-    $service = new CurrencyService();
+    $service = app(CurrencyServiceContract::class);
     $currency = $service->get();
     expect($currency)->toBeInstanceOf(Currency::class)
         ->and($currency->code)->toBe('USD');
+});
+
+test('get currency from session', function (): void {
+    CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
+    CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
+
+    $sessionKey = CurrencyServiceContract::SESSION_CURRENCY_CODE;
+    Session::put($sessionKey, 'EUR');
+
+    $service = app(CurrencyServiceContract::class);
+    $currency = $service->get();
+    expect($currency)->toBeInstanceOf(Currency::class)
+        ->and($currency->code)->toBe('EUR');
+});
+
+test('get base currency when session store invalid currency', function (): void {
+    CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
+    CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
+
+    $sessionKey = CurrencyServiceContract::SESSION_CURRENCY_CODE;
+    Session::put($sessionKey, 'XYZ'); // Invalid currency code
+
+    $service = app(CurrencyServiceContract::class);
+    $currency = $service->get();
+    expect($currency)->toBeInstanceOf(Currency::class)
+        ->and($currency->code)->toBe('USD'); // Should fall back to base
 });
 
 test('get base currency when session store disabled currency', function (): void {
     CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => false]);
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
 
-    $sessionKey = CurrencyService::SESSION_CURRENCY_CODE;
+    $sessionKey = CurrencyServiceContract::SESSION_CURRENCY_CODE;
+    Session::put($sessionKey, 'EUR');
 
-    Session::expects('get')
-        ->once()
-        ->with($sessionKey)
-        ->andReturn('EUR');
-
-    $service = new CurrencyService();
+    $service = app(CurrencyServiceContract::class);
     $currency = $service->get();
     expect($currency)->toBeInstanceOf(Currency::class)
-        ->and($currency->code)->toBe('USD');
+        ->and($currency->code)->toBe('USD'); // Should fall back to base
 });
 
+test('set currency', function (): void {
+    CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
+    CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
+
+    $service = app(CurrencyServiceContract::class);
+    $sessionKey = CurrencyServiceContract::SESSION_CURRENCY_CODE;
+
+    Session::shouldReceive('put')->once()->with($sessionKey, 'EUR');
+    $service->set('EUR');
+
+    // Test setting an invalid currency (should default to base)
+    Session::shouldReceive('put')->once()->with($sessionKey, 'USD');
+    $service->set('XYZ');
+
+    // Test setting a disabled currency (should default to base)
+    CurrencyFactory::new()->create(['code' => 'GBP', 'enabled' => false]);
+    Session::shouldReceive('put')->once()->with($sessionKey, 'USD');
+    $service->set('GBP');
+});

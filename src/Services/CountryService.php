@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Services;
 
+use Denprog\Meridian\Contracts\CountryServiceContract;
 use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
 use Illuminate\Database\Eloquent\Collection;
@@ -13,9 +14,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use RuntimeException;
 
-class CountryService
+final class CountryService implements CountryServiceContract
 {
-    public const string SESSION_KEY_USER_COUNTRY = 'meridian.user_country_iso_alpha_2';
+    public const string SESSION_KEY_USER_COUNTRY = CountryServiceContract::SESSION_KEY_USER_COUNTRY;
 
     private ?Country $defaultCountry = null;
 

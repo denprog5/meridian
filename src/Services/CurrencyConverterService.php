@@ -168,6 +168,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
 
         $cachedRates = Cache::get($cacheKey);
         if (! empty($cachedRates)) {
+            /** @var array<string, float> */
             return $cachedRates;
         }
 

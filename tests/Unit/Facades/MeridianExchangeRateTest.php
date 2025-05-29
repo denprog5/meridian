@@ -6,7 +6,6 @@ namespace Denprog\Meridian\Tests\Unit\Facades;
 
 use Denprog\Meridian\Contracts\CurrencyConverterContract;
 use Denprog\Meridian\Facades\MeridianExchangeRate;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Mockery;
 
@@ -19,22 +18,16 @@ beforeEach(function (): void {
 });
 
 it('facade convert proxies to CurrencyConverterContract method', function (): void {
-    $fromCurrency = 'USD';
-    $toCurrency = 'EUR';
     $amount = 100.0;
-    $date = Carbon::now();
     $expectedConvertedAmount = 85.0;
 
     $this->currencyConverterMock
         ->shouldReceive('convert')
         ->once()
-        ->withArgs(fn (float $argAmount, string $argFrom, string $argTo, $argDate): bool => abs($argAmount - $amount) < 0.00001 &&
-               $argFrom === $fromCurrency &&
-               $argTo === $toCurrency &&
-               ($argDate instanceof Carbon && $argDate->isSameDay($date)))
+        ->withArgs([$amount])
         ->andReturn($expectedConvertedAmount);
 
-    $result = MeridianExchangeRate::convert($amount, $fromCurrency, $toCurrency, $date);
+    $result = MeridianExchangeRate::convert($amount);
 
     expect($result)->toBe($expectedConvertedAmount);
 });

@@ -61,7 +61,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
     /**
      * {@inheritdoc}
      */
-    public function convert(float $amount, bool $returnFormatted = false, ?string $locale = null): float|string
+    public function convert(float|int $amount, bool $returnFormatted = false, ?string $locale = null): float|string
     {
         $convertedAmount = round($amount * $this->exchangeRateValue);
 
@@ -75,7 +75,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
     /**
      * {@inheritdoc}
      */
-    public function convertBetween(float $amount, string $toCurrencyCode, ?string $fromCurrencyCode = null, bool $returnFormatted = false, string|Carbon|null $date = null, ?string $locale = null): float|string
+    public function convertBetween(float|int $amount, string $toCurrencyCode, ?string $fromCurrencyCode = null, bool $returnFormatted = false, string|Carbon|null $date = null, ?string $locale = null): float|string
     {
         $exchangeRate = $this->getRate($toCurrencyCode, $fromCurrencyCode, $date);
         $convertedAmount = round($amount * $exchangeRate);
@@ -166,9 +166,9 @@ final class CurrencyConverterService implements CurrencyConverterContract
         $dateString = $date->format('Y-m-d');
         $cacheKey = "meridian.exchange_rates.$baseCurrencyCode.$targetCurrencyCode.$dateString";
 
+        /** @var array<string, float>|null $cachedRates */
         $cachedRates = Cache::get($cacheKey);
         if (! empty($cachedRates)) {
-            /** @var array<string, float> */
             return $cachedRates;
         }
 

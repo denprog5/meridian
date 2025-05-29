@@ -19,6 +19,7 @@ if (! function_exists('currency')) {
      */
     function currency(?string $currencyCode = null): CurrencyServiceContract|Currency|null
     {
+        /** @var CurrencyServiceContract $service */
         $service = app(CurrencyServiceContract::class);
 
         if ($currencyCode !== null) {
@@ -38,6 +39,7 @@ if (! function_exists('country')) {
      */
     function country(?string $countryIsoAlpha2Code = null): Country|CountryServiceContract|null
     {
+        /** @var CountryServiceContract $service */
         $service = app(CountryServiceContract::class);
 
         if ($countryIsoAlpha2Code !== null) {
@@ -52,10 +54,16 @@ if (! function_exists('exchangeRate')) {
     /**
      * Get the CurrencyConverterContract instance.
      */
-    function exchangeRate(): CurrencyConverterContract
+    function exchangeRate(float|int $amount, bool $returnFormatted = false): CurrencyConverterContract|string|float
     {
-        /** @var CurrencyConverterContract */
-        return app(CurrencyConverterContract::class);
+        /** @var CurrencyConverterContract $service */
+        $service = app(CurrencyConverterContract::class);
+
+        if (! empty($amount)) {
+            return $service->convert($amount, $returnFormatted);
+        }
+
+        return $service;
     }
 }
 
@@ -63,8 +71,15 @@ if (! function_exists('language')) {
     /**
      * Get the current active Language model instance.
      */
-    function language(): Language
+    function language(?string $languageCode = null): Language|LanguageServiceContract|null
     {
-        return app(LanguageServiceContract::class)->get();
+        /** @var LanguageServiceContract $service */
+        $service = app(LanguageServiceContract::class);
+
+        if ($languageCode !== null) {
+            return $service->findByCode($languageCode);
+        }
+
+        return $service;
     }
 }

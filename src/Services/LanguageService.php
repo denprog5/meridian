@@ -221,26 +221,25 @@ final class LanguageService implements LanguageServiceContract
         $defaultLocale = 'en_US';
         $preferredLocales = request()->getLanguages();
 
-        if (empty($preferredLocales) || empty(trim($preferredLocales[0]))) {
+        if (empty($preferredLocales) || in_array(mb_trim($preferredLocales[0]), ['', '0'], true)) {
             return $defaultLocale;
         }
 
         $rawLocale = $preferredLocales[0];
 
         $parts = preg_split('/[-_]/', $rawLocale, 2);
-        $lang = isset($parts[0]) ? strtolower(trim($parts[0])) : null;
+        $lang = isset($parts[0]) ? mb_strtolower(mb_trim($parts[0])) : null;
 
-        if (!$lang || strlen($lang) !== 2 || !ctype_alpha($lang)) {
+        if ($lang === null || $lang === '' || $lang === '0' || mb_strlen($lang) !== 2 || ! ctype_alpha($lang)) {
             return $defaultLocale;
         }
 
-        $region = (isset($parts[1])) ? strtoupper(trim($parts[1])) : null;
+        $region = (isset($parts[1])) ? mb_strtoupper(mb_trim($parts[1])) : null;
 
-        if ($region && strlen($region) === 2 && ctype_alpha($region)) {
+        if ($region && mb_strlen($region) === 2 && ctype_alpha($region)) {
             return "{$lang}_$region";
         }
 
         return $lang;
     }
-
 }

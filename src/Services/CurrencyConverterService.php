@@ -19,9 +19,10 @@ use NumberFormatter;
  */
 final class CurrencyConverterService implements CurrencyConverterContract
 {
-
     private float $exchangeRateValue;
+
     private Currency $currency;
+
     private Currency $baseCurrency;
 
     private NumberFormatter $formatter;
@@ -91,16 +92,12 @@ final class CurrencyConverterService implements CurrencyConverterContract
      */
     public function format(float $amount, string $currencyCode, ?string $locale = null): string
     {
-        if (! $locale) {
-            $formatter = $this->formatter;
-        } else {
-            $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
-        }
+        $formatter = $locale !== null && $locale !== '' && $locale !== '0' ? new NumberFormatter($locale, NumberFormatter::CURRENCY) : $this->formatter;
 
         $formatAmount = $formatter->formatCurrency($amount, $currencyCode);
 
         if ($formatAmount === false) {
-            return number_format($amount, 2) . ' ' . $currencyCode;
+            return number_format($amount, 2).' '.$currencyCode;
         }
 
         return $formatAmount;
@@ -112,7 +109,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
     public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float
     {
         $defaultRate = 1.0;
-        if (empty($baseCurrencyCode)) {
+        if ($baseCurrencyCode === null || $baseCurrencyCode === '' || $baseCurrencyCode === '0') {
             $baseCurrencyCode = $this->baseCurrency->code;
         }
 
@@ -143,22 +140,20 @@ final class CurrencyConverterService implements CurrencyConverterContract
         if ($exchangeRate) {
             $cacheTtl = config()->integer('meridian.cache.exchange_rates', 1800);
             Cache::put($cacheKey, $exchangeRate->rate, $cacheTtl);
+
             return $exchangeRate->rate;
-        } else {
-            Log::info("[Meridian] No exchange rate found for $baseCurrencyCode to $targetCurrencyCode on $dateString. Returned default rate. Update the exchange rate first.");
-            return $defaultRate;
         }
+        Log::info("[Meridian] No exchange rate found for $baseCurrencyCode to $targetCurrencyCode on $dateString. Returned default rate. Update the exchange rate first.");
+
+        return $defaultRate;
     }
 
     /**
-     * @param string $targetCurrencyCode
-     * @param string|null $baseCurrencyCode
-     * @param string|Carbon|null $date
      * @return array<string, float>|null
      */
     public function getRates(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): ?array
     {
-        if (empty($baseCurrencyCode)) {
+        if ($baseCurrencyCode === null || $baseCurrencyCode === '' || $baseCurrencyCode === '0') {
             $baseCurrencyCode = $this->baseCurrency->code;
         }
 
@@ -173,7 +168,6 @@ final class CurrencyConverterService implements CurrencyConverterContract
 
         $cachedRates = Cache::get($cacheKey);
         if (! empty($cachedRates)) {
-            /** @var array<string, float> */
             return $cachedRates;
         }
 
@@ -185,6 +179,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
 
         if ($exchangeRates->count() > 0) {
             Cache::put($cacheKey, $exchangeRates, 3600);
+
             /** @var array<string, float> */
             return $exchangeRates->toArray();
         }

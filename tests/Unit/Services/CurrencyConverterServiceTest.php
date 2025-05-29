@@ -5,37 +5,21 @@ declare(strict_types=1);
 namespace Denprog\Meridian\Tests\Unit\Services;
 
 use Denprog\Meridian\Contracts\CurrencyServiceContract;
+use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Services\CurrencyConverterService;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
-use Denprog\Meridian\Models\Currency;
 use Illuminate\Support\Facades\Config;
 use Mockery;
 
-use Mockery\MockInterface; // Add this import
+    // For type hinting in tests
 
-/**
- * @var CurrencyConverterService
- */
-$currencyConverterService; // This will hold the service instance
-
-/**
- * @var CurrencyServiceContract&MockInterface
- */
-$currencyServiceMock; // For type hinting in tests
-
-/**
- * @var CacheRepository&MockInterface
- */
-$cacheMock; // For type hinting in tests
-
-
-beforeEach(function () {
+beforeEach(function (): void {
     global $currencyConverterService, $currencyServiceMock, $cacheMock;
 
     // Define mocks directly within beforeEach and assign to $this for Pest context
     // Also assign to global vars for easier access/type-hinting in test closures if not using $this
-    $this->currencyServiceMock = \Mockery::mock(CurrencyServiceContract::class);
-    $this->cacheMock = \Mockery::mock(CacheRepository::class);
+    $this->currencyServiceMock = Mockery::mock(CurrencyServiceContract::class);
+    $this->cacheMock = Mockery::mock(CacheRepository::class);
 
     // Assign to globals for convenience if preferred in tests, though $this-> is Pest's way
     $currencyServiceMock = $this->currencyServiceMock;
@@ -47,18 +31,18 @@ beforeEach(function () {
     );
 });
 
-afterEach(function () {
+afterEach(function (): void {
     Mockery::close();
 });
 
-it('can be instantiated', function () {
+it('can be instantiated', function (): void {
     global $currencyConverterService;
     expect($currencyConverterService)->toBeInstanceOf(CurrencyConverterService::class);
 });
 
 // Further tests for format(), getRate(), convert(), convertBetween() will be added here.
 
-it('formats currency correctly with a specific locale', function () {
+it('formats currency correctly with a specific locale', function (): void {
     global $currencyConverterService;
 
     $amount = 1234.56;
@@ -73,7 +57,7 @@ it('formats currency correctly with a specific locale', function () {
     expect($formattedAmount)->toMatch('/^\$\s?1,234\.56$/');
 });
 
-it('formats currency using app.locale when no locale is provided', function () {
+it('formats currency using app.locale when no locale is provided', function (): void {
     global $currencyConverterService;
 
     $amount = 1234.56;
@@ -95,7 +79,7 @@ it('formats currency using app.locale when no locale is provided', function () {
     expect($formattedAmount)->toMatch('/^1\s?234,56\s?€$/');
 });
 
-it('formats currency using en_US as fallback when app.locale is invalid or not set', function () {
+it('formats currency using en_US as fallback when app.locale is invalid or not set', function (): void {
     global $currencyConverterService;
 
     $amount = 789.10;
@@ -118,28 +102,27 @@ it('formats currency using en_US as fallback when app.locale is invalid or not s
     expect($formattedAmountArray)->toBe('¥789');
 });
 
-it('returns null when formatCurrency call fails', function () {
+it('returns null when formatCurrency call fails', function (): void {
     global $currencyConverterService;
 
     $amount = 100.00;
     $locale = 'en_US';
     // Using an invalid or unrecognized currency code for the formatter
-    $invalidCurrencyCode = 'XYZ123'; 
+    $invalidCurrencyCode = 'XYZ123';
 
     $formattedAmount = $currencyConverterService->format($amount, $invalidCurrencyCode, $locale);
     expect($formattedAmount)->toBeNull();
 });
 
-
 // Tests for getRate() method
-describe('getRate', function () {
-    it('returns 1.0 when target and explicit base currencies are the same', function () {
+describe('getRate', function (): void {
+    it('returns 1.0 when target and explicit base currencies are the same', function (): void {
         global $currencyConverterService;
         $rate = $currencyConverterService->getRate('USD', 'USD');
         expect($rate)->toBe(1.0);
     });
 
-    it('returns 1.0 when target currency is the same as system base currency and base is null', function () {
+    it('returns 1.0 when target currency is the same as system base currency and base is null', function (): void {
         global $currencyConverterService, $currencyServiceMock;
 
         $systemBaseCurrencyCode = 'EUR';
@@ -153,7 +136,7 @@ describe('getRate', function () {
         expect($rate)->toBe(1.0);
     });
 
-    it('retrieves rate from cache if available', function () {
+    it('retrieves rate from cache if available', function (): void {
         global $currencyConverterService, $currencyServiceMock, $cacheMock;
 
         $targetCurrencyCode = 'GBP';
@@ -165,7 +148,7 @@ describe('getRate', function () {
         $mockSystemBaseCurrency = new Currency(['code' => $baseCurrencyCode]);
         $currencyServiceMock->shouldReceive('baseCurrency')->andReturn($mockSystemBaseCurrency); // Allow multiple calls if needed
 
-        $cacheKey = "exchange_rate_{$baseCurrencyCode}_{$targetCurrencyCode}_" . now()->toDateString();
+        $cacheKey = "exchange_rate_{$baseCurrencyCode}_{$targetCurrencyCode}_".now()->toDateString();
         $cacheMock->shouldReceive('get')
             ->with($cacheKey)
             ->once()
@@ -178,7 +161,7 @@ describe('getRate', function () {
         expect($rate)->toBe($cachedRate);
     });
 
-    it('retrieves rate from database and caches it when not in cache', function () {
+    it('retrieves rate from database and caches it when not in cache', function (): void {
         global $currencyConverterService, $currencyServiceMock, $cacheMock;
 
         $targetCurrencyCode = 'CAD';
@@ -190,7 +173,7 @@ describe('getRate', function () {
         $mockSystemBaseCurrency = new Currency(['code' => $baseCurrencyCode]);
         $currencyServiceMock->shouldReceive('baseCurrency')->andReturn($mockSystemBaseCurrency);
 
-        $cacheKey = "exchange_rate_{$baseCurrencyCode}_{$targetCurrencyCode}_" . now()->toDateString();
+        $cacheKey = "exchange_rate_{$baseCurrencyCode}_{$targetCurrencyCode}_".now()->toDateString();
 
         $cacheMock->shouldReceive('get')
             ->with($cacheKey)
@@ -201,7 +184,7 @@ describe('getRate', function () {
             ->with($targetCurrencyCode, $baseCurrencyCode, Mockery::type(\Carbon\Carbon::class)) // Expect a Carbon instance for date
             ->once()
             ->andReturn($dbRate);
-        
+
         Config::shouldReceive('get')
             ->with('meridian.cache.exchange_rate_ttl', 1440) // Default TTL from config
             ->andReturn($cacheTtl);
@@ -214,7 +197,7 @@ describe('getRate', function () {
         expect($rate)->toBe($dbRate);
     });
 
-    it('returns null if system base currency is not found when baseCurrencyCode is null', function () {
+    it('returns null if system base currency is not found when baseCurrencyCode is null', function (): void {
         global $currencyConverterService, $currencyServiceMock;
 
         $targetCurrencyCode = 'JPY';
@@ -227,7 +210,7 @@ describe('getRate', function () {
         expect($rate)->toBeNull();
     });
 
-    it('returns null if exchange rate is not found in database and not in cache', function () {
+    it('returns null if exchange rate is not found in database and not in cache', function (): void {
         global $currencyConverterService, $currencyServiceMock, $cacheMock;
 
         $targetCurrencyCode = 'AUD';
@@ -237,7 +220,7 @@ describe('getRate', function () {
         $mockSystemBaseCurrency = new Currency(['code' => $baseCurrencyCode]);
         $currencyServiceMock->shouldReceive('baseCurrency')->andReturn($mockSystemBaseCurrency);
 
-        $cacheKey = "exchange_rate_{$baseCurrencyCode}_{$targetCurrencyCode}_" . now()->toDateString();
+        $cacheKey = "exchange_rate_{$baseCurrencyCode}_{$targetCurrencyCode}_".now()->toDateString();
         $cacheMock->shouldReceive('get')
             ->with($cacheKey)
             ->once()
@@ -255,10 +238,9 @@ describe('getRate', function () {
     });
 });
 
-
 // Tests for convert() method
-describe('convert', function () {
-    it('returns null if active display currency is not found', function () {
+describe('convert', function (): void {
+    it('returns null if active display currency is not found', function (): void {
         global $currencyConverterService, $currencyServiceMock;
 
         $currencyServiceMock->shouldReceive('get') // This is for getActiveDisplayCurrency()
@@ -269,7 +251,7 @@ describe('convert', function () {
         expect($result)->toBeNull();
     });
 
-    it('returns null if system base currency is not found', function () {
+    it('returns null if system base currency is not found', function (): void {
         global $currencyConverterService, $currencyServiceMock;
 
         $activeDisplayCurrency = new Currency(['code' => 'EUR']);
@@ -280,7 +262,7 @@ describe('convert', function () {
         expect($result)->toBeNull();
     });
 
-    it('returns original amount if active display currency is same as base currency and not formatted', function () {
+    it('returns original amount if active display currency is same as base currency and not formatted', function (): void {
         global $currencyConverterService, $currencyServiceMock;
 
         $sameCurrencyCode = 'USD';
@@ -296,7 +278,7 @@ describe('convert', function () {
         expect($result)->toBe($amount);
     });
 
-    it('returns formatted amount if active display currency is same as base currency and formatted', function () {
+    it('returns formatted amount if active display currency is same as base currency and formatted', function (): void {
         global $currencyConverterService, $currencyServiceMock;
 
         $sameCurrencyCode = 'EUR';
@@ -309,14 +291,13 @@ describe('convert', function () {
 
         $currencyServiceMock->shouldReceive('get')->once()->andReturn($activeDisplayCurrency);
         $currencyServiceMock->shouldReceive('baseCurrency')->once()->andReturn($systemBaseCurrency);
-        
+
         // We don't need to mock format() itself, but we need to ensure config for locale is set if format relies on it.
         Config::shouldReceive('get')->with('app.locale')->andReturn('en_US'); // Default app locale for fallback
 
         $result = $currencyConverterService->convert($amount, true, $locale); // returnFormatted = true
-        
+
         // Using a regex to be more flexible with minor variations like non-breaking spaces.
         expect($result)->toMatch('/^200,00\s?€$/');
     });
 });
-

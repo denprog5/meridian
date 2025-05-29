@@ -208,4 +208,39 @@ final class LanguageService implements LanguageServiceContract
         Session::put(self::SESSION_KEY_USER_LANGUAGE, $language->code);
 
     }
+
+    /**
+     * Gets the user's most preferred locale from the browser's Accept-Language header.
+     * Returns 'en_US' if no preferred locale can be determined.
+     * The returned locale is normalized to 'll_RR' or 'll' format.
+     *
+     * @return string The preferred locale (e.g., 'en_US', 'de_CH', 'fr') or 'en_US'.
+     */
+    public function detectBrowserLocale(): string
+    {
+        $defaultLocale = 'en_US';
+        $preferredLocales = request()->getLanguages();
+
+        if (empty($preferredLocales) || empty(trim($preferredLocales[0]))) {
+            return $defaultLocale;
+        }
+
+        $rawLocale = $preferredLocales[0];
+
+        $parts = preg_split('/[-_]/', $rawLocale, 2);
+        $lang = isset($parts[0]) ? strtolower(trim($parts[0])) : null;
+
+        if (!$lang || strlen($lang) !== 2 || !ctype_alpha($lang)) {
+            return $defaultLocale;
+        }
+
+        $region = (isset($parts[1])) ? strtoupper(trim($parts[1])) : null;
+
+        if ($region && strlen($region) === 2 && ctype_alpha($region)) {
+            return "{$lang}_$region";
+        }
+
+        return $lang;
+    }
+
 }

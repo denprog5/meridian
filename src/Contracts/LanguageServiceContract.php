@@ -64,4 +64,13 @@ interface LanguageServiceContract
      * Sets the active language based on browser detection, falling back to default.
      */
     public function setByBrowserLanguage(): void;
+
+    /**
+     * Gets the user's most preferred locale from the browser's Accept-Language header.
+     * Returns 'en_US' if no preferred locale can be determined.
+     * The returned locale is normalized to 'll_RR' or 'll' format.
+     *
+     * @return string The preferred locale (e.g., 'en_US', 'de_CH', 'fr') or 'en_US'.
+     */
+    public function detectBrowserLocale(): string;
 }

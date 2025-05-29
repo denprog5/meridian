@@ -7,15 +7,17 @@ namespace Denprog\Meridian;
 use Denprog\Meridian\Commands\InstallCommand;
 use Denprog\Meridian\Commands\UpdateExchangeRatesCommand;
 use Denprog\Meridian\Contracts\CountryServiceContract;
+use Denprog\Meridian\Contracts\CurrencyConverterContract;
 use Denprog\Meridian\Contracts\CurrencyServiceContract;
 use Denprog\Meridian\Contracts\ExchangeRateProvider as ExchangeRateProviderContract;
-use Denprog\Meridian\Contracts\ExchangeRateServiceContract;
 use Denprog\Meridian\Contracts\LanguageServiceContract;
+use Denprog\Meridian\Contracts\UpdateExchangeRateContract;
 use Denprog\Meridian\Providers\FrankfurterAppProvider;
 use Denprog\Meridian\Services\CountryService;
+use Denprog\Meridian\Services\CurrencyConverterService;
 use Denprog\Meridian\Services\CurrencyService;
-use Denprog\Meridian\Services\ExchangeRateService;
 use Denprog\Meridian\Services\LanguageService;
+use Denprog\Meridian\Services\UpdateExchangeRateService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
@@ -56,8 +58,9 @@ class MeridianServiceProvider extends BaseServiceProvider
         // Bind services to the container
         $this->app->singleton(CountryServiceContract::class, CountryService::class);
         $this->app->singleton(CurrencyServiceContract::class, CurrencyService::class);
-        $this->app->singleton(ExchangeRateServiceContract::class, ExchangeRateService::class);
         $this->app->singleton(LanguageServiceContract::class, LanguageService::class);
+        $this->app->singleton(CurrencyConverterContract::class, CurrencyConverterService::class);
+        $this->app->singleton(UpdateExchangeRateContract::class, UpdateExchangeRateService::class);
     }
 
     /**

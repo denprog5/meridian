@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Facades;
 
+use Denprog\Meridian\Contracts\CurrencyServiceContract;
 use Denprog\Meridian\Models\Currency;
-use Denprog\Meridian\Services\CurrencyService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Facade;
 
@@ -18,12 +18,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static Currency|null findById(int $id, bool $useCache = true, int $cacheTtlMinutes = 60)
  * @method static Currency|null findByCode(string $code, bool $useCache = true, int $cacheTtlMinutes = 60)
  *
- * @see CurrencyService
+ * @see CurrencyServiceContract
  */
 class MeridianCurrency extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return CurrencyService::class;
+        return CurrencyServiceContract::class;
     }
 }

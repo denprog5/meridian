@@ -94,7 +94,7 @@ final class CountryService implements CountryServiceContract
 
         // If, after all fallbacks, no country is found, then it's a critical problem.
         if (! $country instanceof Country) {
-            throw new RuntimeException("Default country ('{$defaultIsoCodeSetting}' or ultimate fallback 'US') could not be found. Please ensure a valid default country exists in the database.");
+            throw new RuntimeException("Default country ('$defaultIsoCodeSetting' or ultimate fallback 'US') could not be found. Please ensure a valid default country exists in the database.");
         }
 
         $this->defaultCountry = $country;

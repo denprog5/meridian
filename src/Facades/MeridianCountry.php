@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Facades;
 
+use Denprog\Meridian\Contracts\CountryServiceContract;
 use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
-use Denprog\Meridian\Services\CountryService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Facade;
 
@@ -20,12 +20,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static Collection<int, Country> findByContinent(Continent $continent, bool $useCache = true, int $cacheTtlMinutes = 60)
  * @method static Country|null findById(string $name, bool $useCache = true, int $cacheTtlMinutes = 60)
  *
- * @see CountryService
+ * @see CountryServiceContract
  */
 class MeridianCountry extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return CountryService::class;
+        return CountryServiceContract::class;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Commands;
 
-use Denprog\Meridian\Contracts\ExchangeRateServiceContract;
+use Denprog\Meridian\Contracts\UpdateExchangeRateContract;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 
@@ -27,7 +27,7 @@ class UpdateExchangeRatesCommand extends Command
     /**
      * Create a new command instance.
      */
-    public function __construct(protected ExchangeRateServiceContract $exchangeRateService)
+    public function __construct(protected UpdateExchangeRateContract $updateExchangeRateService)
     {
         parent::__construct();
     }
@@ -39,15 +39,17 @@ class UpdateExchangeRatesCommand extends Command
     {
         $this->info('Attempting to fetch and store exchange rates...');
 
-        $result = $this->exchangeRateService->fetchAndStoreRatesFromProvider();
+        $success = $this->updateExchangeRateService->updateRates();
 
-        if ($result === null || $result === []) {
-            $this->error('Failed to update exchange rates.');
+        if ($success) {
+            $this->info('Exchange rates updated successfully.');
+        } else {
+            $this->error('Failed to update exchange rates or no rates needed updating.');
 
+            // Consider if this should always be a FAILURE. If no rates were found for today but provider was reached, is it a failure?
+            // For now, let's assume any non-true result means something didn't go as fully expected.
             return CommandAlias::FAILURE;
         }
-
-        $this->info('Exchange rates updated successfully.');
 
         return CommandAlias::SUCCESS;
     }

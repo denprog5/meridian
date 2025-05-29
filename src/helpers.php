@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use Denprog\Meridian\Contracts\CountryServiceContract;
+use Denprog\Meridian\Contracts\CurrencyConverterContract;
+use Denprog\Meridian\Contracts\CurrencyServiceContract;
+use Denprog\Meridian\Contracts\LanguageServiceContract;
 use Denprog\Meridian\Models\Country;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\Language;
-use Denprog\Meridian\Services\CountryService;
-use Denprog\Meridian\Services\CurrencyService;
-use Denprog\Meridian\Services\ExchangeRateService;
-use Denprog\Meridian\Services\LanguageService;
 
 if (! function_exists('currency')) {
     /**
@@ -17,9 +17,9 @@ if (! function_exists('currency')) {
      * @param  string|null  $currencyCode  Optional currency code to retrieve a specific currency.
      *                                     If null, returns the CurrencyService instance.
      */
-    function currency(?string $currencyCode = null): CurrencyService|Currency|null
+    function currency(?string $currencyCode = null): CurrencyServiceContract|Currency|null
     {
-        $service = app(CurrencyService::class);
+        $service = app(CurrencyServiceContract::class);
 
         if ($currencyCode !== null) {
             return $service->findByCode($currencyCode);
@@ -36,9 +36,9 @@ if (! function_exists('country')) {
      * @param  string|null  $countryIsoAlpha2Code  Optional ISO Alpha-2 code to retrieve a specific country.
      *                                             If null, returns the CountryService instance.
      */
-    function country(?string $countryIsoAlpha2Code = null): Country|CountryService|null
+    function country(?string $countryIsoAlpha2Code = null): Country|CountryServiceContract|null
     {
-        $service = app(CountryService::class);
+        $service = app(CountryServiceContract::class);
 
         if ($countryIsoAlpha2Code !== null) {
             return $service->findByIsoAlpha2Code($countryIsoAlpha2Code);
@@ -50,12 +50,12 @@ if (! function_exists('country')) {
 
 if (! function_exists('exchangeRate')) {
     /**
-     * Get the ExchangeRateService instance.
+     * Get the CurrencyConverterContract instance.
      */
-    function exchangeRate(): ExchangeRateService
+    function exchangeRate(): CurrencyConverterContract
     {
-        /** @var ExchangeRateService */
-        return app(ExchangeRateService::class);
+        /** @var CurrencyConverterContract */
+        return app(CurrencyConverterContract::class);
     }
 }
 
@@ -65,6 +65,6 @@ if (! function_exists('language')) {
      */
     function language(): Language
     {
-        return app(LanguageService::class)->get();
+        return app(LanguageServiceContract::class)->get();
     }
 }

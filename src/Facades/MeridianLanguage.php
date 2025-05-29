@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Facades;
 
+use Denprog\Meridian\Contracts\LanguageServiceContract;
 use Denprog\Meridian\Models\Language;
-use Denprog\Meridian\Services\LanguageService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see LanguageService
+ * @see LanguageServiceContract
  *
  * @method static Language get()
  * @method static void set(string $code)
@@ -27,6 +27,6 @@ class MeridianLanguage extends Facade
      */
     protected static function getFacadeAccessor(): string
     {
-        return LanguageService::class;
+        return LanguageServiceContract::class;
     }
 }

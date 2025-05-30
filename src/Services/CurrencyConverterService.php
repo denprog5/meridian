@@ -9,6 +9,7 @@ use Denprog\Meridian\Contracts\CurrencyServiceContract;
 use Denprog\Meridian\Contracts\LanguageServiceContract;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\ExchangeRate;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -81,7 +82,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
         $convertedAmount = round($amount * $exchangeRate);
 
         if ($returnFormatted) {
-            return $this->format($convertedAmount, $this->currency->code, $locale);
+            return $this->format($convertedAmount, $toCurrencyCode, $locale);
         }
 
         return $convertedAmount;
@@ -92,7 +93,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
      */
     public function format(float $amount, string $currencyCode, ?string $locale = null): string
     {
-        $formatter = $locale !== null && $locale !== '' && $locale !== '0' ? new NumberFormatter($locale, NumberFormatter::CURRENCY) : $this->formatter;
+        $formatter = $locale === null || $locale === '' || $locale === '0' ? $this->formatter : new NumberFormatter($locale, NumberFormatter::CURRENCY);
 
         $formatAmount = $formatter->formatCurrency($amount, $currencyCode);
 
@@ -117,13 +118,11 @@ final class CurrencyConverterService implements CurrencyConverterContract
             return $defaultRate;
         }
 
-        if (empty($date)) {
-            $date = Carbon::now();
-        } elseif (is_string($date)) {
+        if (is_string($date)) {
             $date = Carbon::parse($date);
         }
 
-        $dateString = $date->format('Y-m-d');
+        $dateString = $date instanceof Carbon ? $date->format('Y-m-d') : 'latest';
         $cacheKey = "meridian.exchange_rate.$baseCurrencyCode.$targetCurrencyCode.$dateString";
 
         $cachedRate = Cache::get($cacheKey);
@@ -134,7 +133,10 @@ final class CurrencyConverterService implements CurrencyConverterContract
         $exchangeRate = ExchangeRate::query()
             ->where('base_currency_code', $baseCurrencyCode)
             ->where('target_currency_code', $targetCurrencyCode)
-            ->where('rate_date', $date)
+            ->when($date, function (Builder $query, Carbon $date): void {
+                $query->where('rate_date', $date);
+            })
+            ->latest('rate_date')
             ->first();
 
         if ($exchangeRate) {

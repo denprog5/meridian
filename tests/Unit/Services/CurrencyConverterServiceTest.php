@@ -48,3 +48,22 @@ it('returns original amount', function (): void {
     $currencyConverterService = app(CurrencyConverterService::class);
     expect($currencyConverterService->convert($amount))->toBe($amount);
 });
+
+test('converts between currencies with base currency', function (): void {
+    $amount = 100.0;
+    $convertAmount = 400.0;
+
+    $currencyConverterService = app(CurrencyConverterService::class);
+    expect($currencyConverterService->convertBetween($amount, 'PLN'))->toBe($convertAmount)
+        ->and($currencyConverterService->convertBetween(amount: $amount, toCurrencyCode: 'PLN', returnFormatted: true))->toBe('PLN 400.00');
+});
+
+test('converts between currencies', function (): void {
+    $amount = 100.0;
+    $convertAmount = 110.0;
+
+    $currencyConverterService = app(CurrencyConverterService::class);
+    expect($currencyConverterService->convertBetween($amount, 'USD', 'EUR'))->toBe($convertAmount)
+        ->and($currencyConverterService->convertBetween(amount: $amount, toCurrencyCode: 'USD', fromCurrencyCode: 'EUR', returnFormatted: true, locale: 'de_DE'))->toBe('110,00 $')
+        ->and($currencyConverterService->convertBetween($amount, 'USD', 'EUR', true))->toBe('$110.00');
+});

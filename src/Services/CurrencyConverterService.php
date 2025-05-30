@@ -52,7 +52,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
         if ($this->currency->code === $this->baseCurrency->code) {
             $this->exchangeRateValue = 1.0;
         } else {
-            $this->exchangeRateValue = $exchangeRate ? $exchangeRate->rate : 1.0;
+            $this->exchangeRateValue = $exchangeRate ? (float) ($exchangeRate->rate) : 1.0;
         }
 
         $this->formatter = new NumberFormatter($defaultLocale, NumberFormatter::CURRENCY);
@@ -77,7 +77,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
      */
     public function convertBetween(float|int $amount, string $toCurrencyCode, ?string $fromCurrencyCode = null, bool $returnFormatted = false, string|Carbon|null $date = null, ?string $locale = null): float|string
     {
-        $exchangeRate = $this->getRate($toCurrencyCode, $fromCurrencyCode, $date);
+        $exchangeRate = (float) ($this->getRate($toCurrencyCode, $fromCurrencyCode, $date));
         $convertedAmount = round($amount * $exchangeRate);
 
         if ($returnFormatted) {
@@ -106,7 +106,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
     /**
      * {@inheritdoc}
      */
-    public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float
+    public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float|string
     {
         $defaultRate = 1.0;
         if ($baseCurrencyCode === null || $baseCurrencyCode === '' || $baseCurrencyCode === '0') {

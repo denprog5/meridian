@@ -59,7 +59,7 @@ interface CurrencyConverterContract
      * @param  string|Carbon|null  $date  The date for which to fetch the exchange rate. Defaults to null (latest available rate).
      * @return float The exchange rate.
      */
-    public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float;
+    public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float|string;
 
     /**
      * Retrieves multiple exchange rates for a target currency against a base currency for a specific date.

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Database\Factories;
 
-use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\ExchangeRate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
@@ -28,10 +27,7 @@ class ExchangeRateFactory extends Factory
      */
     public function definition(): array
     {
-        $currencyCodes = Currency::query()->where('enabled', true)->pluck('code')->toArray();
-        if (count($currencyCodes) < 2) {
-            $currencyCodes = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD'];
-        }
+        $currencyCodes = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'HKD', 'NZD', 'SGD'];
 
         $baseCurrency = $this->faker->randomElement($currencyCodes);
         $targetCurrency = $this->faker->randomElement(array_diff($currencyCodes, [$baseCurrency]));

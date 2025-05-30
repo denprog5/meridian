@@ -6,7 +6,6 @@ namespace Denprog\Meridian\Database\Factories;
 
 use Denprog\Meridian\Enums\Continent;
 use Denprog\Meridian\Models\Country;
-use Denprog\Meridian\Models\Currency;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -30,12 +29,8 @@ class CountryFactory extends Factory
     {
         $name = fake()->country();
 
-        $currencyCodes = Currency::query()->where('enabled', true)->pluck('code')->all();
-
-        $currencyCode = null;
-        if (! empty($currencyCodes)) {
-            $currencyCode = fake()->optional(0.9)->randomElement($currencyCodes);
-        }
+        $currencyCodes = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'HKD', 'NZD', 'SGD'];
+        $currencyCode = fake()->optional(0.9)->randomElement($currencyCodes);
 
         return [
             'continent_code' => fake()->randomElement(Continent::cases()),

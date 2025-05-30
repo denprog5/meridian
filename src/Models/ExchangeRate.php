@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $base_currency_code
  * @property string $target_currency_code
- * @property float $rate
+ * @property string|float $rate
  * @property Carbon $rate_date
  * @property Carbon|null $created_at
  * @property-read Currency|null $baseCurrency

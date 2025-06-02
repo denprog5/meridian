@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Commands;
 
+use Denprog\Meridian\Database\Seeders\MeridianDatabaseSeeder;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
@@ -27,8 +28,6 @@ class InstallDataCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -42,7 +41,7 @@ class InstallDataCommand extends Command
         // 2. Run MeridianDatabaseSeeder
         $this->line('Seeding Meridian database...');
         Artisan::call('db:seed', [
-            '--class' => '\\Denprog\\Meridian\\Database\\Seeders\\MeridianDatabaseSeeder',
+            '--class' => MeridianDatabaseSeeder::class,
             '--force' => true,
         ], $this->getOutput());
         $this->info('Database seeding completed.');
@@ -50,39 +49,43 @@ class InstallDataCommand extends Command
         // 3. Publish GeoLite2-City.mmdb
         $this->line('Publishing GeoLite2-City.mmdb...');
         // Source path is relative to this Command class file, which is in src/Commands
-        $sourcePath = __DIR__ . '/../../resources/GeoLite2-City.mmdb';
+        $sourcePath = __DIR__.'/../../resources/GeoLite2-City.mmdb';
         $configPathKey = 'meridian.geolocation.drivers.maxmind_database.database_path';
-        $relativeDestDir = config($configPathKey);
+        $relativeDestDir = config()->string($configPathKey);
 
-        if (!is_string($relativeDestDir) || empty($relativeDestDir)) {
-            $this->error("GeoIP database path key '{$configPathKey}' is not configured or invalid.");
+        if ($relativeDestDir === '') {
+            $this->error("GeoIP database path key '$configPathKey' is not configured or invalid.");
+
             return self::FAILURE;
         }
 
         // The configured path is relative to storage_path()
         $destinationDir = storage_path($relativeDestDir);
-        $destinationPath = $destinationDir . DIRECTORY_SEPARATOR . 'GeoLite2-City.mmdb';
+        $destinationPath = $destinationDir.DIRECTORY_SEPARATOR.'GeoLite2-City.mmdb';
 
-        if (!File::exists($sourcePath)) {
-            $this->error("Source GeoIP database not found at: {$sourcePath}");
+        if (! File::exists($sourcePath)) {
+            $this->error("Source GeoIP database not found at: $sourcePath");
+
             return self::FAILURE;
         }
 
         // Ensure the destination directory exists
-        if (!File::isDirectory($destinationDir)) {
+        if (! File::isDirectory($destinationDir)) {
             File::ensureDirectoryExists($destinationDir);
-            $this->comment("Created directory: {$destinationDir}");
+            $this->comment("Created directory: $destinationDir");
         }
 
         try {
             File::copy($sourcePath, $destinationPath);
-            $this->info("GeoIP database published to: {$destinationPath}");
+            $this->info("GeoIP database published to: $destinationPath");
         } catch (Exception $e) {
             $this->error("Failed to publish GeoIP database: {$e->getMessage()}");
+
             return self::FAILURE;
         }
 
         $this->info('Meridian data installation completed successfully.');
+
         return self::SUCCESS;
     }
 }

@@ -8,6 +8,6 @@ it('can be created from string value', function (CountryLanguageStatusEnum $cont
     expect(CountryLanguageStatusEnum::from($continent->value))->toBe($continent);
 })->with(CountryLanguageStatusEnum::cases());
 
-it('return 6 statuses', function (): void {
-    expect(count(CountryLanguageStatusEnum::values()))->toBe(6);
+it('return 22 statuses', function (): void {
+    expect(count(CountryLanguageStatusEnum::values()))->toBe(22);
 });

@@ -69,9 +69,9 @@ class UpdateGeoipDbCommand extends Command
                 'editions' => $editions,
             ];
 
-            if (! empty($accountId)) {
-                $clientOptions['account_id'] = $accountId;
-            }
+//            if (! empty($accountId)) {
+//                $clientOptions['account_id'] = $accountId;
+//            }
 
             $client = new GeoIPUpdaterClient($clientOptions);
             $client->run();

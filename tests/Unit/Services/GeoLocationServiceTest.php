@@ -41,10 +41,6 @@ beforeEach(function () use ($defaultConfig): void {
     $this->service = new GeoLocationService($this->mockApp, $this->mockConfig, $this->mockSession);
 });
 
-afterEach(function (): void {
-    Mockery::close();
-});
-
 test('successful geolocation lookup returns LocationData object', function (): void {
     // (ID: GEOIP002-SUB018C1)
     $ipAddress = '81.2.69.142'; // Example public IP

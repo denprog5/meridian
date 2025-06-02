@@ -1,18 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 use Denprog\Meridian\DataTransferObjects\LocationData;
-use GeoIp2\Record\City;
-use GeoIp2\Record\Continent;
 use GeoIp2\Record\Country;
-use GeoIp2\Record\Location;
 use GeoIp2\Record\MaxMind;
-use GeoIp2\Record\Postal;
-use GeoIp2\Record\RepresentedCountry;
 use GeoIp2\Record\Subdivision;
-use GeoIp2\Record\Traits;
 
 // Mock GeoIp2\Model\City for testing fromMaxMindRecord
-function mockMaxMindCityRecord(array $data = []): \GeoIp2\Model\City
+function mockMaxMindCityRecord(array $data = []): GeoIp2\Model\City
 {
     $cityData = array_merge([
         'city' => ['names' => ['en' => 'Test City']],
@@ -35,7 +31,7 @@ function mockMaxMindCityRecord(array $data = []): \GeoIp2\Model\City
         ],
     ], $data);
 
-    return new \GeoIp2\Model\City([
+    return new GeoIp2\Model\City([
         'city' => $cityData['city'],
         'continent' => $cityData['continent'],
         'country' => $cityData['country'],
@@ -49,7 +45,7 @@ function mockMaxMindCityRecord(array $data = []): \GeoIp2\Model\City
     ], ['en']);
 }
 
-it('can be created from a MaxMind record', function () {
+it('can be created from a MaxMind record', function (): void {
     $ipAddress = '192.168.1.100';
     $maxMindRecord = mockMaxMindCityRecord();
 
@@ -68,7 +64,7 @@ it('can be created from a MaxMind record', function () {
         ->and($locationData->raw)->toBe($maxMindRecord->jsonSerialize());
 });
 
-it('can be created as an empty DTO', function () {
+it('can be created as an empty DTO', function (): void {
     $ipAddress = '127.0.0.1';
     $locationData = LocationData::empty($ipAddress);
 
@@ -85,7 +81,7 @@ it('can be created as an empty DTO', function () {
         ->and($locationData->raw)->toBeNull();
 });
 
-it('correctly identifies if it is empty', function () {
+it('correctly identifies if it is empty', function (): void {
     $ipAddress = '127.0.0.1';
     $emptyLocation = LocationData::empty($ipAddress);
     $filledLocation = LocationData::fromMaxMindRecord(mockMaxMindCityRecord(), $ipAddress);
@@ -94,7 +90,7 @@ it('correctly identifies if it is empty', function () {
         ->and($filledLocation->isEmpty())->toBeFalse();
 });
 
-it('can be converted to an array', function () {
+it('can be converted to an array', function (): void {
     $ipAddress = '192.168.1.100';
     $maxMindRecord = mockMaxMindCityRecord();
     $locationData = LocationData::fromMaxMindRecord($maxMindRecord, $ipAddress);
@@ -108,7 +104,7 @@ it('can be converted to an array', function () {
         ->and($arrayData['isInEuropeanUnion'])->toBeFalse(); // Check a few key fields
 });
 
-it('correctly determines if country is in EU', function () {
+it('correctly determines if country is in EU', function (): void {
     $germanyRecord = mockMaxMindCityRecord([
         'country' => ['iso_code' => 'DE', 'names' => ['en' => 'Germany'], 'is_in_european_union' => true],
     ]);

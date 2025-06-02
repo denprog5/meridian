@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Denprog\Meridian\Contracts;
 
 use Denprog\Meridian\DataTransferObjects\LocationData;
@@ -14,8 +16,9 @@ interface GeoLocationServiceContract
     /**
      * Looks up geolocation data for the given IP address.
      *
-     * @param string $ipAddress The IP address to look up.
+     * @param  string  $ipAddress  The IP address to look up.
      * @return LocationData The geolocation data.
+     *
      * @throws \Denprog\Meridian\Exceptions\InvalidIpAddressException If the IP address is invalid.
      * @throws \Denprog\Meridian\Exceptions\GeoIpLookupException If the lookup fails for other reasons.
      */
@@ -23,16 +26,13 @@ interface GeoLocationServiceContract
 
     /**
      * Gets an identifier for the currently configured GeoIP driver.
-     *
-     * @return string
      */
     public function getDriverIdentifier(): string;
 
     /**
      * Stores the given LocationData in the session, if session storage is enabled.
      *
-     * @param LocationData $locationData The location data to store.
-     * @return void
+     * @param  LocationData  $locationData  The location data to store.
      */
     public function storeLocationInSession(LocationData $locationData): void;
 
@@ -45,8 +45,6 @@ interface GeoLocationServiceContract
 
     /**
      * Clears any stored LocationData from the session.
-     *
-     * @return void
      */
     public function clearLocationFromSession(): void;
 }

@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Denprog\Meridian\Commands;
 
 use Denprog\Meridian\Exceptions\ConfigurationException;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Psr\Log\LoggerInterface;
@@ -27,10 +30,6 @@ class UpdateGeoipDbCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @param ConfigRepository $config
-     * @param LoggerInterface $logger
-     * @return int
      */
     public function handle(ConfigRepository $config, LoggerInterface $logger): int
     {
@@ -48,23 +47,23 @@ class UpdateGeoipDbCommand extends Command
             if (empty($relativeDbPath)) {
                 throw new ConfigurationException('MaxMind database storage path is not configured (meridian.geolocation.drivers.maxmind_database.database_path).');
             }
-            if (empty($editions) || !is_array($editions)) {
+            if (empty($editions) || ! is_array($editions)) {
                 throw new ConfigurationException('MaxMind database editions are not configured correctly (meridian.geolocation.drivers.maxmind_database.editions).');
             }
 
             // The tronovav/geoip2-update library expects the *directory* where the .mmdb files will be stored.
             // Our config points to the *file* itself, relative to storage/app.
             // We need to derive the absolute directory path and ensure it exists and is writable.
-            $absoluteStorageDirectory = storage_path('app/' . ltrim(dirname($relativeDbPath), '/\\'));
+            $absoluteStorageDirectory = storage_path('app/'.mb_ltrim(dirname((string) $relativeDbPath), '/\\'));
 
-            if (!is_dir($absoluteStorageDirectory)) {
-                if (!mkdir($absoluteStorageDirectory, 0755, true)) {
+            if (! is_dir($absoluteStorageDirectory)) {
+                if (! mkdir($absoluteStorageDirectory, 0755, true)) {
                     throw new GeoIPUpdaterException("Failed to create GeoIP database storage directory: {$absoluteStorageDirectory}");
                 }
                 $this->line("Created storage directory: {$absoluteStorageDirectory}");
             }
-            if (!is_writable($absoluteStorageDirectory)) {
-                 throw new GeoIPUpdaterException("GeoIP database storage directory is not writable: {$absoluteStorageDirectory}");
+            if (! is_writable($absoluteStorageDirectory)) {
+                throw new GeoIPUpdaterException("GeoIP database storage directory is not writable: {$absoluteStorageDirectory}");
             }
 
             $clientOptions = [
@@ -73,7 +72,7 @@ class UpdateGeoipDbCommand extends Command
                 'editions' => $editions,
             ];
 
-            if (!empty($accountId)) {
+            if (! empty($accountId)) {
                 $clientOptions['account_id'] = $accountId;
             }
 
@@ -83,20 +82,21 @@ class UpdateGeoipDbCommand extends Command
             $updatedFiles = $client->updated();
             $errors = $client->errors();
 
-            if (!empty($errors)) {
+            if (! empty($errors)) {
                 foreach ($errors as $error) {
                     $this->error("Error updating GeoIP database: {$error}");
-                    $logger->error('GeoIP DB Update Error: ' . $error);
+                    $logger->error('GeoIP DB Update Error: '.$error);
                 }
                 $this->warn('GeoIP database update process completed with errors.');
+
                 return Command::FAILURE;
             }
 
-            if (!empty($updatedFiles)) {
+            if (! empty($updatedFiles)) {
                 $this->info('Successfully updated the following GeoIP database files:');
                 foreach ($updatedFiles as $file) {
                     $this->line("- {$file}");
-                    $logger->info('GeoIP DB Updated: ' . $file);
+                    $logger->info('GeoIP DB Updated: '.$file);
                 }
             } else {
                 $this->info('GeoIP databases are already up to date.');
@@ -104,19 +104,23 @@ class UpdateGeoipDbCommand extends Command
             }
 
             $this->info('GeoIP database update process finished successfully.');
+
             return Command::SUCCESS;
 
         } catch (ConfigurationException $e) {
-            $this->error("Configuration error: " . $e->getMessage());
-            $logger->error('GeoIP DB Update Configuration Error: ' . $e->getMessage());
+            $this->error('Configuration error: '.$e->getMessage());
+            $logger->error('GeoIP DB Update Configuration Error: '.$e->getMessage());
+
             return Command::FAILURE;
         } catch (GeoIPUpdaterException $e) {
-            $this->error("GeoIP Updater error: " . $e->getMessage());
-            $logger->error('GeoIP DB Updater Error: ' . $e->getMessage());
+            $this->error('GeoIP Updater error: '.$e->getMessage());
+            $logger->error('GeoIP DB Updater Error: '.$e->getMessage());
+
             return Command::FAILURE;
-        } catch (\Exception $e) {
-            $this->error("An unexpected error occurred: " . $e->getMessage());
-            $logger->error('GeoIP DB Update Unexpected Error: ' . $e->getMessage(), ['exception' => $e]);
+        } catch (Exception $e) {
+            $this->error('An unexpected error occurred: '.$e->getMessage());
+            $logger->error('GeoIP DB Update Unexpected Error: '.$e->getMessage(), ['exception' => $e]);
+
             return Command::FAILURE;
         }
     }

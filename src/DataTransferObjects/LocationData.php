@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Denprog\Meridian\DataTransferObjects;
 
 use GeoIp2\Model\City as MaxMindCity;
@@ -15,17 +17,17 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
     /**
      * LocationData constructor.
      *
-     * @param string $ipAddress The IP address that was looked up.
-     * @param string|null $countryCode ISO 3166-1 alpha-2 country code (e.g., "US").
-     * @param string|null $countryName Country name (e.g., "United States").
-     * @param string|null $cityName City name (e.g., "Mountain View").
-     * @param string|null $postalCode Postal code (e.g., "94043").
-     * @param float|null $latitude Latitude.
-     * @param float|null $longitude Longitude.
-     * @param string|null $timezone Timezone (e.g., "America/Los_Angeles").
-     * @param int|null $accuracyRadius The radius in kilometers around the latitude/longitude.
-     * @param bool $isInEuropeanUnion True if the IP address is in a country in the European Union.
-     * @param array<mixed>|null $raw Optionally, the raw data array from the GeoIP provider.
+     * @param  string  $ipAddress  The IP address that was looked up.
+     * @param  string|null  $countryCode  ISO 3166-1 alpha-2 country code (e.g., "US").
+     * @param  string|null  $countryName  Country name (e.g., "United States").
+     * @param  string|null  $cityName  City name (e.g., "Mountain View").
+     * @param  string|null  $postalCode  Postal code (e.g., "94043").
+     * @param  float|null  $latitude  Latitude.
+     * @param  float|null  $longitude  Longitude.
+     * @param  string|null  $timezone  Timezone (e.g., "America/Los_Angeles").
+     * @param  int|null  $accuracyRadius  The radius in kilometers around the latitude/longitude.
+     * @param  bool  $isInEuropeanUnion  True if the IP address is in a country in the European Union.
+     * @param  array<mixed>|null  $raw  Optionally, the raw data array from the GeoIP provider.
      */
     public function __construct(
         public string $ipAddress,
@@ -39,15 +41,13 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
         public ?int $accuracyRadius = null,
         public bool $isInEuropeanUnion = false,
         public ?array $raw = null
-    ) {
-    }
+    ) {}
 
     /**
      * Creates a LocationData DTO from a MaxMind City record.
      *
-     * @param MaxMindCity $record The MaxMind City record.
-     * @param string $ipAddress The IP address that was looked up.
-     * @return self
+     * @param  MaxMindCity  $record  The MaxMind City record.
+     * @param  string  $ipAddress  The IP address that was looked up.
      */
     public static function fromMaxMindRecord(MaxMindCity $record, string $ipAddress): self
     {
@@ -69,31 +69,11 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
     /**
      * Creates an empty LocationData DTO for a given IP address.
      *
-     * @param string $ipAddress The IP address for which the lookup failed or was not found.
-     * @return self
+     * @param  string  $ipAddress  The IP address for which the lookup failed or was not found.
      */
     public static function empty(string $ipAddress): self
     {
         return new self(ipAddress: $ipAddress);
-    }
-
-    /**
-     * Checks if the location data is essentially empty (all optional fields are null).
-     *
-     * @return bool
-     */
-    public function isEmpty(): bool
-    {
-        return $this->countryCode === null &&
-               $this->countryName === null &&
-               $this->cityName === null &&
-               $this->postalCode === null &&
-               $this->latitude === null &&
-               $this->longitude === null &&
-               $this->timezone === null &&
-               $this->accuracyRadius === null &&
-               $this->isInEuropeanUnion === false && // Default for empty
-               $this->raw === null;
     }
 
     /**
@@ -104,8 +84,7 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
     /**
      * Creates a LocationData instance from an array.
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -122,6 +101,23 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
             isInEuropeanUnion: (bool) ($data['isInEuropeanUnion'] ?? false),
             raw: isset($data['raw']) && is_array($data['raw']) ? $data['raw'] : (isset($data['raw']) ? [$data['raw']] : null) // Handle various raw formats
         );
+    }
+
+    /**
+     * Checks if the location data is essentially empty (all optional fields are null).
+     */
+    public function isEmpty(): bool
+    {
+        return $this->countryCode === null &&
+               $this->countryName === null &&
+               $this->cityName === null &&
+               $this->postalCode === null &&
+               $this->latitude === null &&
+               $this->longitude === null &&
+               $this->timezone === null &&
+               $this->accuracyRadius === null &&
+               $this->isInEuropeanUnion === false && // Default for empty
+               $this->raw === null;
     }
 
     public function toArray(): array
@@ -144,7 +140,7 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
     /**
      * Convert the object to its JSON representation.
      *
-     * @param int $options
+     * @param  int  $options
      * @return string
      */
     public function toJson($options = 0)

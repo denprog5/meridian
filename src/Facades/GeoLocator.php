@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Denprog\Meridian\Facades;
 
 use Denprog\Meridian\Contracts\GeoLocationServiceContract;
@@ -13,14 +15,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static LocationData|null getLocationFromSession()
  * @method static void clearLocationFromSession()
  *
- * @see \Denprog\Meridian\Contracts\GeoLocationServiceContract
+ * @see GeoLocationServiceContract
  */
 class GeoLocator extends Facade
 {
     /**
      * Get the registered name of the component.
-     *
-     * @return string
      */
     protected static function getFacadeAccessor(): string
     {

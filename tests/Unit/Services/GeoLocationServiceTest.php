@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Denprog\Meridian\Contracts\GeoIpDriverContract;
 use Denprog\Meridian\DataTransferObjects\LocationData;
 use Denprog\Meridian\Services\GeoLocationService;
@@ -7,27 +9,6 @@ use GeoIp2\Exception\AddressNotFoundException;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Session\Store as SessionStore;
-use Mockery\MockInterface;
-
-// Mock the LocationData class only for specific tests if needed, otherwise use the real one.
-// Mockery::mock('alias:Denprog\Meridian\DataTransferObjects\LocationData');
-
-/** @var MockInterface&Application */
-$mockApp;
-
-/** @var MockInterface&GeoIpDriverContract */
-$mockDriver;
-
-/** @var MockInterface&ConfigRepository */
-$mockConfig;
-
-/** @var MockInterface&SessionStore */
-$mockSession;
-
-/**
- * @var GeoLocationService
- */
-$service;
 
 // Default config values
 $defaultConfig = [
@@ -35,7 +16,7 @@ $defaultConfig = [
     'meridian.geolocation.session.key' => 'meridian_location',
 ];
 
-beforeEach(function () use ($defaultConfig) {
+beforeEach(function () use ($defaultConfig): void {
     $this->mockApp = Mockery::mock(Application::class);
     $this->mockDriver = Mockery::mock(GeoIpDriverContract::class);
     $this->mockConfig = Mockery::mock(ConfigRepository::class);
@@ -60,11 +41,11 @@ beforeEach(function () use ($defaultConfig) {
     $this->service = new GeoLocationService($this->mockApp, $this->mockConfig, $this->mockSession);
 });
 
-afterEach(function () {
+afterEach(function (): void {
     Mockery::close();
 });
 
-test('successful geolocation lookup returns LocationData object', function () {
+test('successful geolocation lookup returns LocationData object', function (): void {
     // (ID: GEOIP002-SUB018C1)
     $ipAddress = '81.2.69.142'; // Example public IP
     $expectedLocationData = LocationData::empty($ipAddress); // Replace with a more complete mock if needed
@@ -80,7 +61,7 @@ test('successful geolocation lookup returns LocationData object', function () {
         ->and($result->ipAddress)->toBe($ipAddress);
 });
 
-test('lookup with an invalid IP address returns empty LocationData', function () {
+test('lookup with an invalid IP address returns empty LocationData', function (): void {
     // (ID: GEOIP002-SUB018C2)
     $ipAddress = 'invalid-ip';
 
@@ -96,7 +77,7 @@ test('lookup with an invalid IP address returns empty LocationData', function ()
         ->and($result->ipAddress)->toBe($ipAddress);
 });
 
-test('lookup when GeoIP driver throws AddressNotFoundException returns empty LocationData', function () {
+test('lookup when GeoIP driver throws AddressNotFoundException returns empty LocationData', function (): void {
     // (ID: GEOIP002-SUB018C3)
     $ipAddress = '127.0.0.1'; // Example private IP that might not be found
 
@@ -112,14 +93,14 @@ test('lookup when GeoIP driver throws AddressNotFoundException returns empty Loc
         ->and($result->ipAddress)->toBe($ipAddress);
 });
 
-test('lookup when GeoIP driver throws a generic exception returns empty LocationData', function () {
+test('lookup when GeoIP driver throws a generic exception returns empty LocationData', function (): void {
     // (ID: GEOIP002-SUB018C4)
     $ipAddress = '8.8.8.8';
 
     $this->mockDriver->shouldReceive('lookup')
         ->once()
         ->with($ipAddress)
-        ->andThrow(new \Exception('Generic driver error'));
+        ->andThrow(new Exception('Generic driver error'));
 
     $result = $this->service->lookup($ipAddress);
 
@@ -128,7 +109,7 @@ test('lookup when GeoIP driver throws a generic exception returns empty Location
         ->and($result->ipAddress)->toBe($ipAddress);
 });
 
-test('stores location data in session when session is enabled and lookup is successful', function () {
+test('stores location data in session when session is enabled and lookup is successful', function (): void {
     $ipAddress = '8.8.8.8';
     $locationArray = [
         'ipAddress' => $ipAddress,
@@ -172,7 +153,7 @@ test('stores location data in session when session is enabled and lookup is succ
     $serviceWithSessionEnabled->lookup($ipAddress);
 });
 
-test('retrieves location data from session when available and session enabled', function () {
+test('retrieves location data from session when available and session enabled', function (): void {
     $ipAddress = '8.8.4.4';
     $locationArray = [
         'ipAddress' => $ipAddress,
@@ -210,7 +191,7 @@ test('retrieves location data from session when available and session enabled', 
         ->and($result->toArray())->toBe($locationArray); // Compare array form for simplicity
 });
 
-test('does not store location data in session when session is disabled', function () {
+test('does not store location data in session when session is disabled', function (): void {
     $ipAddress = '1.1.1.1';
     $locationArray = ['ipAddress' => $ipAddress, 'countryCode' => 'AU'];
     $expectedLocationData = LocationData::fromArray($locationArray);
@@ -235,7 +216,7 @@ test('does not store location data in session when session is disabled', functio
     $serviceWithSessionDisabled->lookup($ipAddress);
 });
 
-test('getLocationFromSession returns null when session is disabled', function () {
+test('getLocationFromSession returns null when session is disabled', function (): void {
     $configMockForNoSessionTest = Mockery::mock(ConfigRepository::class);
     $configMockForNoSessionTest->shouldReceive('get')->with('meridian.geolocation.driver')->andReturn('maxmind_database');
     $configMockForNoSessionTest->shouldReceive('get')->with('meridian.geolocation.session.key', 'meridian_location')->andReturn('test_session_key_disabled_get');
@@ -251,7 +232,7 @@ test('getLocationFromSession returns null when session is disabled', function ()
     expect($result)->toBeNull();
 });
 
-test('storeLocationInSession does nothing when session is disabled', function () {
+test('storeLocationInSession does nothing when session is disabled', function (): void {
     $locationData = LocationData::fromArray(['ipAddress' => '2.2.2.2']);
 
     $configMockForNoSessionTest = Mockery::mock(ConfigRepository::class);
@@ -266,7 +247,7 @@ test('storeLocationInSession does nothing when session is disabled', function ()
     $serviceWithSessionDisabled->storeLocationInSession($locationData); // Should do nothing
 });
 
-test('clearLocationFromSession does nothing when session is disabled', function () {
+test('clearLocationFromSession does nothing when session is disabled', function (): void {
     $configMockForNoSessionTest = Mockery::mock(ConfigRepository::class);
     $configMockForNoSessionTest->shouldReceive('get')->with('meridian.geolocation.driver')->andReturn('maxmind_database');
     $configMockForNoSessionTest->shouldReceive('get')->with('meridian.geolocation.session.key', 'meridian_location')->andReturn('test_session_key_disabled_clear');

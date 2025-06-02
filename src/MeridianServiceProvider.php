@@ -10,19 +10,19 @@ use Denprog\Meridian\Contracts\CountryServiceContract;
 use Denprog\Meridian\Contracts\CurrencyConverterContract;
 use Denprog\Meridian\Contracts\CurrencyServiceContract;
 use Denprog\Meridian\Contracts\ExchangeRateProvider as ExchangeRateProviderContract;
+use Denprog\Meridian\Contracts\GeoIpDriverContract;
+use Denprog\Meridian\Contracts\GeoLocationServiceContract;
 use Denprog\Meridian\Contracts\LanguageServiceContract;
 use Denprog\Meridian\Contracts\UpdateExchangeRateContract;
-use Denprog\Meridian\Contracts\GeoLocationServiceContract;
-use Denprog\Meridian\Contracts\GeoIpDriverContract;
+use Denprog\Meridian\Exceptions\ConfigurationException;
 use Denprog\Meridian\Providers\FrankfurterAppProvider;
 use Denprog\Meridian\Services\CountryService;
 use Denprog\Meridian\Services\CurrencyConverterService;
 use Denprog\Meridian\Services\CurrencyService;
+use Denprog\Meridian\Services\Drivers\GeoIP\MaxMindDatabaseDriver;
+use Denprog\Meridian\Services\GeoLocationService;
 use Denprog\Meridian\Services\LanguageService;
 use Denprog\Meridian\Services\UpdateExchangeRateService;
-use Denprog\Meridian\Services\GeoLocationService;
-use Denprog\Meridian\Services\Drivers\GeoIP\MaxMindDatabaseDriver;
-use Denprog\Meridian\Exceptions\ConfigurationException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
@@ -116,7 +116,7 @@ class MeridianServiceProvider extends BaseServiceProvider
             $this->commands([
                 InstallCommand::class,
                 UpdateExchangeRatesCommand::class,
-                \Denprog\Meridian\Commands\UpdateGeoipDbCommand::class,
+                Commands\UpdateGeoipDbCommand::class,
             ]);
         }
     }

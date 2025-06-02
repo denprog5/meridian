@@ -159,39 +159,59 @@ describe('MaxMindDatabaseDriver - Lookup Method with GeoIP2 Reader Interactions'
         // The driver for this group is initialized later, after $this->mockReader is set up.
 
         // This is the mock for the GeoIp2\Model\City object returned by the reader
-        $this->mockGeoIpCityRecord = Mockery::mock(GeoIp2City::class);
+        $this->mockGeoIpCityRecord = Mockery::mock(\GeoIp2\Model\City::class); // Using FQCN for clarity
 
-        // Create stdClass objects to represent the nested record data
-        $countryData = new \stdClass();
-        $countryData->isoCode = 'US';
-        $countryData->name = 'United States';
-        $countryData->isInEuropeanUnion = false;
+        // --- Country Record Mock ---
+        $countryAttribs = [
+            'iso_code' => 'US',
+            'names' => ['en' => 'United States'],
+            'is_in_european_union' => false,
+        ];
+        $mockCountryRecord = Mockery::mock(\GeoIp2\Record\Country::class, [$countryAttribs, ['en']]) // Pass locales
+            ->makePartial();
 
-        $cityData = new \stdClass();
-        $cityData->name = 'Mountain View';
+        // --- City Record Mock ---
+        $cityAttribs = [
+            'names' => ['en' => 'Mountain View'],
+        ];
+        $mockCityRecord = Mockery::mock(\GeoIp2\Record\City::class, [$cityAttribs, ['en']]) // Pass locales
+            ->makePartial();
 
-        $postalData = new \stdClass();
-        $postalData->code = '94043';
+        // --- Postal Record Mock ---
+        $postalAttribs = [
+            'code' => '94043',
+        ];
+        $mockPostalRecord = Mockery::mock(\GeoIp2\Record\Postal::class, [$postalAttribs])
+            ->makePartial();
 
-        $locationData = new \stdClass();
-        $locationData->latitude = 37.422;
-        $locationData->longitude = -122.084;
-        $locationData->timeZone = 'America/Los_Angeles';
-        $locationData->accuracyRadius = 10;
+        // --- Location Record Mock ---
+        $locationAttribs = [
+            'latitude' => 37.422,
+            'longitude' => -122.084,
+            'time_zone' => 'America/Los_Angeles',
+            'accuracy_radius' => 10,
+        ];
+        $mockLocationRecord = Mockery::mock(\GeoIp2\Record\Location::class, [$locationAttribs])
+            ->makePartial();
 
-        // Configure the main mockGeoIpCityRecord to return these stdClass objects by mocking public property access
-        $this->mockGeoIpCityRecord->shouldReceive('country')->andReturn($countryData);
-        $this->mockGeoIpCityRecord->shouldReceive('city')->andReturn($cityData);
-        $this->mockGeoIpCityRecord->shouldReceive('postal')->andReturn($postalData);
-        $this->mockGeoIpCityRecord->shouldReceive('location')->andReturn($locationData);
+        // Configure the main mockGeoIpCityRecord to return these partial mock records
+        $this->mockGeoIpCityRecord->shouldReceive('__get')->with('country')->andReturn($mockCountryRecord);
+        $this->mockGeoIpCityRecord->shouldReceive('__get')->with('city')->andReturn($mockCityRecord);
+        $this->mockGeoIpCityRecord->shouldReceive('__get')->with('postal')->andReturn($mockPostalRecord);
+        $this->mockGeoIpCityRecord->shouldReceive('__get')->with('location')->andReturn($mockLocationRecord);
 
-        // Mock jsonSerialize method
-        $this->mockGeoIpCityRecord->shouldReceive('jsonSerialize')->andReturn([
-            'country' => ['iso_code' => 'US', 'names' => ['en' => 'United States'], 'is_in_european_union' => false],
-            'city' => ['names' => ['en' => 'Mountain View']],
-            'postal' => ['code' => '94043'],
-            'location' => ['latitude' => 37.422, 'longitude' => -122.084, 'time_zone' => 'America/Los_Angeles', 'accuracy_radius' => 10],
-        ]);
+        // Mock the jsonSerialize method for the raw data in LocationData
+        // Include all expected fields to make the raw data more realistic if needed for other assertions.
+        // Mock the jsonSerialize method for the raw data in LocationData
+        // This should reflect the structure returned by GeoIp2\Model\City::jsonSerialize()
+        $rawReturn = [
+            'country' => $countryAttribs, // GeoIp2\Record\Country::jsonSerialize() returns its constructor's $record array
+            'city' => $cityAttribs,       // GeoIp2\Record\City::jsonSerialize() returns its constructor's $record array
+            'postal' => $postalAttribs,   // GeoIp2\Record\Postal::jsonSerialize() returns its constructor's $record array
+            'location' => $locationAttribs, // GeoIp2\Record\Location::jsonSerialize() returns its constructor's $record array
+            'traits' => ['ip_address' => VALID_IP], // GeoIp2\Model\City adds traits.ip_address
+        ];
+        $this->mockGeoIpCityRecord->shouldReceive('jsonSerialize')->andReturn($rawReturn);
 
         // This is the mock for the GeoIp2\Database\Reader class itself
         $this->mockReader = Mockery::mock(Reader::class);
@@ -226,10 +246,10 @@ describe('MaxMindDatabaseDriver - Lookup Method with GeoIP2 Reader Interactions'
     });
 
     test('lookup throws GeoIpDatabaseException if Reader throws InvalidDatabaseException', function () {
-        $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new GeoIpInvalidDatabaseException('Invalid DB format.'));
+        $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new \GeoIp2\Exception\InvalidDatabaseException('Simulated DB error.'));
 
         $this->driver->lookup(VALID_IP);
-    })->throws(GeoIpDatabaseException::class, 'Invalid GeoIP database: Invalid DB format.');
+    })->throws(GeoIpDatabaseException::class, 'Invalid GeoIP database: Simulated DB error.');
 
     test('lookup throws ConfigurationException if Reader throws InvalidArgumentException', function () {
         // GeoIP2\Exception\InvalidArgumentException, not the generic PHP one

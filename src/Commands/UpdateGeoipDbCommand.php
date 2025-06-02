@@ -121,7 +121,7 @@ class UpdateGeoipDbCommand extends Command
         string $targetDirectory,
     ): void
     {
-        $tempExtractPath = $targetDirectory;
+        $tempExtractPath = storage_path('app/geoip_temp_extract_' . uniqid());
 
         try {
             if (!File::exists($archivePath)) {

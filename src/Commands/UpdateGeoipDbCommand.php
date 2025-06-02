@@ -6,6 +6,7 @@ namespace Denprog\Meridian\Commands;
 
 use Denprog\Meridian\Exceptions\ConfigurationException;
 use Denprog\Meridian\Exceptions\GeoIPUpdaterException;
+use Denprog\Meridian\Services\Drivers\GeoIP\MaxMindDatabaseDriver;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
@@ -122,10 +123,11 @@ class UpdateGeoipDbCommand extends Command
     ): void
     {
         $tempExtractPath = storage_path('app/geoip_temp_extract_' . uniqid());
+        $fileName = MaxMindDatabaseDriver::FILE_NAME;
 
         try {
-            if (!File::exists($archivePath)) {
-                throw new Exception("Архив не найден: $archivePath");
+            if (! File::exists($archivePath)) {
+                throw new Exception("Archive file not found: $archivePath");
             }
 
             File::ensureDirectoryExists($tempExtractPath);
@@ -134,67 +136,70 @@ class UpdateGeoipDbCommand extends Command
             $phar->decompress();
 
             $tarPath = str_replace('.tar.gz', '.tar', $archivePath);
-            if (!File::exists($tarPath)) {
+            if (! File::exists($tarPath)) {
                 $tarPath = $archivePath;
             }
 
             $pharTar = new PharData($tarPath);
             $pharTar->extractTo($tempExtractPath, null, true);
 
-            $this->info("Архив $archivePath распакован во временную директорию $tempExtractPath");
+            $this->info("Archive $archivePath extracted to  $tempExtractPath");
 
             $foundMmdbFile = null;
             $filesAndFolders = File::directories($tempExtractPath);
 
-            if (!empty($filesAndFolders)) {
+            if (! empty($filesAndFolders)) {
                 $potentialMmdbDir = $filesAndFolders[0];
-                $expectedMmdbPathInArchive = $potentialMmdbDir . '/' . 'GeoLite2-City.mmdb';
-                if (File::exists($expectedMmdbPathInArchive)) {
-                    $foundMmdbFile = $expectedMmdbPathInArchive;
+                if (is_string($potentialMmdbDir)){
+                    $expectedMmdbPathInArchive = $potentialMmdbDir . '/' . $fileName;
+
+                    if (File::exists($expectedMmdbPathInArchive)) {
+                        $foundMmdbFile = $expectedMmdbPathInArchive;
+                    }
                 }
             }
 
-            if (!$foundMmdbFile) {
+            if (! $foundMmdbFile) {
                 $allFiles = File::allFiles($tempExtractPath);
                 foreach ($allFiles as $file) {
-                    if ($file->getFilename() === 'GeoLite2-City.mmdb') {
+                    if ($file->getFilename() === $fileName) {
                         $foundMmdbFile = $file->getRealPath();
                         break;
                     }
                 }
             }
 
-            if (!$foundMmdbFile) {
-                throw new Exception("Файл GeoLite2-City.mmdb не найден в распакованном архиве $archivePath. Содержимое $tempExtractPath: " . implode(', ', File::allFiles($tempExtractPath)));
+            if (! $foundMmdbFile) {
+                throw new Exception("File GeoLite2-City.mmdb not found in unpacked archive $archivePath. Content of $tempExtractPath: " . implode(', ', File::allFiles($tempExtractPath)));
             }
 
             File::ensureDirectoryExists($targetDirectory);
-            $finalMmdbPath = rtrim($targetDirectory, '/') . '/' . 'GeoLite2-City.mmdb';
+            $finalMmdbPath = rtrim($targetDirectory, '/') . '/' . $fileName;
 
             if (File::move($foundMmdbFile, $finalMmdbPath)) {
-                $this->info("Файл GeoLite2-City.mmdb успешно перемещен в $finalMmdbPath с заменой.");
+                $this->info("File GeoLite2-City.mmdb successfully moved to $finalMmdbPath");
             } else {
-                throw new Exception("Не удалось переместить файл $foundMmdbFile в $finalMmdbPath");
+                throw new Exception("Does not moved file GeoLite2-City.mmdb from $foundMmdbFile to $finalMmdbPath");
             }
 
         } catch (Exception $e) {
-            Log::error("Ошибка при обработке архива GeoLite: " . $e->getMessage() . " (Архив: $archivePath)");
+            Log::error("Error processing GeoLite archive: " . $e->getMessage() . " (Archive: $archivePath)");
             throw $e;
         } finally {
             if (File::isDirectory($tempExtractPath)) {
                 File::deleteDirectory($tempExtractPath);
-                $this->info("Временная директория $tempExtractPath удалена.");
+                $this->info("Temporary directory $tempExtractPath deleted.");
             }
 
             $tarPathAfterDecompress = str_replace('.tar.gz', '.tar', $archivePath);
             if ($tarPathAfterDecompress !== $archivePath && File::exists($tarPathAfterDecompress)) {
                 File::delete($tarPathAfterDecompress);
-                $this->info("Промежуточный .tar файл $tarPathAfterDecompress удален.");
+                $this->info("Temporary .tar файл $tarPathAfterDecompress удален.");
             }
 
             if (File::exists($archivePath)) {
                 File::delete($archivePath);
-                $this->info("Скачанный архив $archivePath удален после обработки.");
+                $this->info("Download archive $archivePath deleted.");
             }
         }
     }

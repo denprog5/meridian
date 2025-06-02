@@ -13,8 +13,7 @@
         "php": "^8.3.0",
         "ext-intl": "*",
         "geoip2/geoip2": "^3.2",
-        "laravel/framework": "^11.45|^12.0",
-        "tronovav/geoip2-update": "^2.3"
+        "laravel/framework": "^11.45|^12.0"
     },
     "require-dev": {
         "laravel/pint": "^1.22.1",

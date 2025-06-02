@@ -55,10 +55,7 @@ return [
             'maxmind_database' => [
                 'license_key' => env('MAXMIND_LICENSE_KEY'),
                 'account_id' => env('MAXMIND_ACCOUNT_ID'),
-                // Default path within storage/app. The meridian:update-geoip-db command will use this.
-                'database_path' => 'meridian/geoip/GeoLite2-City.mmdb',
-                // You can also use an absolute path if the database is stored elsewhere:
-                // 'database_path' => database_path('maxmind/GeoLite2-City.mmdb'),
+                'database_path' => 'meridian/geoip/',
                 'editions' => [
                     env('MAXMIND_EDITION', 'GeoLite2-City'),
                 ],

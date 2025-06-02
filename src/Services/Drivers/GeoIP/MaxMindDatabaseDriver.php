@@ -21,6 +21,7 @@ use MaxMind\Db\Reader\InvalidDatabaseException as MaxMindDbInvalidDatabaseExcept
 final readonly class MaxMindDatabaseDriver implements GeoIpDriverContract
 {
     private const string DRIVER_IDENTIFIER = 'maxmind_database';
+    public const string FILE_NAME = 'GeoLite2-City.mmdb';
 
     private Reader $reader;
 
@@ -33,8 +34,8 @@ final readonly class MaxMindDatabaseDriver implements GeoIpDriverContract
      */
     public function __construct()
     {
-        $relativePath = config()->string('meridian.geolocation.drivers.maxmind_database.database_path', 'meridian/geoip/GeoLite2-City.mmdb');
-        $this->databasePath = storage_path('app/'.mb_ltrim($relativePath, '/\\'));
+        $relativePath = config()->string('meridian.geolocation.drivers.maxmind_database.database_path', 'meridian/geoip/');
+        $this->databasePath = storage_path('app/'.mb_ltrim($relativePath, '/\\').'/'.self::FILE_NAME);
         try {
             $this->reader = new Reader($this->databasePath);
         } catch (MaxMindDbInvalidDatabaseException $e) {

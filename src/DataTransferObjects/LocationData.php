@@ -101,6 +101,29 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
      *
      * @return array<string, mixed>
      */
+    /**
+     * Creates a LocationData instance from an array.
+     *
+     * @param array<string, mixed> $data
+     * @return self
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            ipAddress: (string) ($data['ipAddress'] ?? ''),
+            countryCode: isset($data['countryCode']) ? (string) $data['countryCode'] : null,
+            countryName: isset($data['countryName']) ? (string) $data['countryName'] : null,
+            cityName: isset($data['cityName']) ? (string) $data['cityName'] : null,
+            postalCode: isset($data['postalCode']) ? (string) $data['postalCode'] : null,
+            latitude: isset($data['latitude']) ? (float) $data['latitude'] : null,
+            longitude: isset($data['longitude']) ? (float) $data['longitude'] : null,
+            timezone: isset($data['timezone']) ? (string) $data['timezone'] : null,
+            accuracyRadius: isset($data['accuracyRadius']) ? (int) $data['accuracyRadius'] : null,
+            isInEuropeanUnion: (bool) ($data['isInEuropeanUnion'] ?? false),
+            raw: isset($data['raw']) && is_array($data['raw']) ? $data['raw'] : (isset($data['raw']) ? [$data['raw']] : null) // Handle various raw formats
+        );
+    }
+
     public function toArray(): array
     {
         return [

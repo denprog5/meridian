@@ -9,6 +9,8 @@ use Denprog\Meridian\Exceptions\ConfigurationException;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Session\Store as SessionStore;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 final class GeoLocationService implements GeoLocationServiceContract
 {
@@ -90,13 +92,30 @@ final class GeoLocationService implements GeoLocationServiceContract
      */
     public function lookup(string $ipAddress): LocationData
     {
-        $location = $this->driver->lookup($ipAddress);
-
-        if ($this->sessionEnabled && $this->session) {
-            $this->storeLocationInSession($location);
+        // Validate IP address format
+        $validator = Validator::make(['ip' => $ipAddress], ['ip' => 'ip']);
+        if ($validator->fails()) {
+            Log::debug("Invalid IP address format provided to GeoLocationService: {$ipAddress}");
+            return LocationData::empty($ipAddress); // Return empty DTO with the original IP
         }
 
-        return $location;
+        try {
+            $location = $this->driver->lookup($ipAddress);
+
+            if ($this->sessionEnabled && $this->session && !$location->isEmpty()) {
+                $this->storeLocationInSession($location);
+            }
+
+            return $location;
+        } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
+            // Specific handling for address not found, which is a common case
+            Log::info("GeoIP address not found for {$ipAddress}: " . $e->getMessage());
+            return LocationData::empty($ipAddress); // Return empty DTO with the original IP
+        } catch (\Exception $e) {
+            // Catch all other exceptions from the driver or during processing
+            Log::error("Error during GeoIP lookup for {$ipAddress}: " . $e->getMessage(), ['exception' => $e]);
+            return LocationData::empty($ipAddress); // Return empty DTO with the original IP
+        }
     }
 
     /**

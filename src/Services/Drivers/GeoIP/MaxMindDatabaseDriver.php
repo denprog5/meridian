@@ -68,7 +68,7 @@ final class MaxMindDatabaseDriver implements GeoIpDriverContract
         } catch (MaxMindDbInvalidDatabaseException $e) {
             throw new GeoIpDatabaseException("Invalid GeoIP database: {$e->getMessage()}", 0, $e);
         } catch (InvalidArgumentException $e) { // Thrown by Reader constructor for invalid locale
-            throw new \Exception("DIAGNOSTIC: GeoIP Reader configuration error: {$e->getMessage()}", 0, $e);
+            throw new ConfigurationException("GeoIP Reader configuration error: {$e->getMessage()}", 0, $e);
         } catch (\Exception $e) {
             // Catch-all for other unexpected errors during lookup
             throw new GeoIpLookupException("GeoIP lookup failed: {$e->getMessage()}", 0, $e);

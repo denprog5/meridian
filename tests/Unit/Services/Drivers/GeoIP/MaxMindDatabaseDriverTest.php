@@ -42,8 +42,7 @@ beforeEach(function () {
     $this->configMock->shouldReceive('get')
         ->with(TEST_DB_PATH_CONFIG_KEY)
         ->andReturn('geoip/GeoLite2-City.mmdb') // A dummy path
-        ->byDefault(); // Allows specific tests to override this expectation easily
-
+        ->byDefault();
 
     // We will often need to mock the Reader constructor or its methods.
     // For now, we initialize the driver, but specific tests might need to re-initialize
@@ -235,12 +234,32 @@ describe('MaxMindDatabaseDriver - Lookup Method with GeoIP2 Reader Interactions'
     })->throws(GeoIpDatabaseException::class, 'Invalid GeoIP database: Simulated DB error.');
 
     test('lookup throws ConfigurationException if Reader throws InvalidArgumentException', function () {
-        // GeoIP2\Exception\InvalidArgumentException, not the generic PHP one
+        // This mockReader is specific to the 'Lookup Method with GeoIP2 Reader Interactions' describe block
+        // and is re-initialized in its beforeEach.
         $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new \InvalidArgumentException('Invalid reader argument.'));
 
-        $this->driver->lookup(VALID_IP);
-    })->throws(ConfigurationException::class)
-        ->expect(fn (ConfigurationException $e) => expect($e->getPrevious())->toBeInstanceOf(\InvalidArgumentException::class));
+        $expectedExceptionClass = \Denprog\Meridian\Exceptions\ConfigurationException::class;
+        $expectedMessage = 'GeoIP Reader configuration error: Invalid reader argument.';
+        $expectedPreviousExceptionClass = \InvalidArgumentException::class;
+
+        try {
+            $this->driver->lookup(VALID_IP);
+            $this->fail("Expected exception '{$expectedExceptionClass}' was not thrown.");
+        } catch (\Denprog\Meridian\Exceptions\ConfigurationException $e) {
+            expect($e)->toBeInstanceOf($expectedExceptionClass);
+            expect($e->getMessage())->toBe($expectedMessage);
+            expect($e->getPrevious())->toBeInstanceOf($expectedPreviousExceptionClass);
+            // If all assertions pass, the test effectively passes.
+        } catch (\Throwable $e) {
+            // Caught an unexpected exception type
+            $this->fail(sprintf(
+                "Expected exception '%s' but caught '%s' with message: '%s'",
+                $expectedExceptionClass,
+                get_class($e),
+                $e->getMessage()
+            ));
+        }
+    });
 
     test('lookup throws GeoIpLookupException for other generic Reader exceptions', function () {
         $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new \RuntimeException('Generic reader error.')); // Using a generic RuntimeException

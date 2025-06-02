@@ -124,28 +124,20 @@ class MeridianServiceProvider extends BaseServiceProvider
     /**
      * Register the GeoIP driver based on configuration.
      *
-     * @throws ConfigurationException
      */
     protected function registerGeoIpDriver(): void
     {
-        $defaultDriver = $this->app['config']->get('meridian.geolocation.default_driver');
+        $defaultDriver = config()->string('meridian.geolocation.default_driver', 'maxmind_database');
 
         match ($defaultDriver) {
             'maxmind_database' => $this->app->singleton(GeoIpDriverContract::class, MaxMindDatabaseDriver::class),
-            // Add other drivers here as they are implemented
-            // default => throw new ConfigurationException("Unsupported GeoIP driver: {\$defaultDriver}"),
-            default => $this->app->bind(GeoIpDriverContract::class, function ($app) use ($defaultDriver) {
-                // Attempt to resolve a custom driver if not 'maxmind_database'
-                // This allows users to define their own driver classes.
-                // For simplicity, we'll assume a convention or require explicit mapping if more complex.
-                // For now, if it's not maxmind_database, we throw an error if it's not a known custom one (which is none yet).
-                $driverConfigPath = "meridian.geolocation.drivers.{$defaultDriver}.class";
-                $customDriverClass = $this->app['config']->get($driverConfigPath);
+            default => $this->app->bind(GeoIpDriverContract::class, function (Application $app) use ($defaultDriver) {
+                $customDriverClass = config()->string("meridian.geolocation.drivers.$defaultDriver.class");
 
                 if ($customDriverClass && class_exists($customDriverClass) && is_subclass_of($customDriverClass, GeoIpDriverContract::class)) {
                     return $app->make($customDriverClass);
                 }
-                throw new ConfigurationException("Unsupported or unconfigured GeoIP driver: {$defaultDriver}");
+                throw new ConfigurationException("Unsupported or unconfigured GeoIP driver: $defaultDriver");
             }),
         };
     }

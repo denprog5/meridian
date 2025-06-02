@@ -50,7 +50,6 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
      *
      * @param  MaxMindCity  $record  The MaxMind City record.
      * @param  string  $ipAddress  The IP address that was looked up.
-     * @return self
      */
     public static function fromMaxMindRecord(MaxMindCity $record, string $ipAddress): self
     {
@@ -73,7 +72,6 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
      * Creates an empty LocationData DTO for a given IP address.
      *
      * @param  string  $ipAddress  The IP address for which the lookup failed or was not found.
-     * @return self
      */
     public static function empty(string $ipAddress): self
     {
@@ -82,7 +80,6 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
 
     /**
      * @param array<string, mixed> $data
-     * @return self
      */
     public static function fromArray(array $data): self
     {
@@ -103,8 +100,6 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
 
     /**
      * Checks if the location data is essentially empty (all optional fields are null).
-     *
-     * @return bool
      */
     public function isEmpty(): bool
     {

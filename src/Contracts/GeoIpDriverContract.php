@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Denprog\Meridian\Contracts;
 
 use Denprog\Meridian\DataTransferObjects\LocationData;
+use Denprog\Meridian\Exceptions\GeoIpDatabaseException;
+use Denprog\Meridian\Exceptions\GeoIpLookupException;
+use Denprog\Meridian\Exceptions\InvalidIpAddressException;
 
 /**
  * Interface GeoIpDriverContract
@@ -19,9 +22,9 @@ interface GeoIpDriverContract
      * @param  string  $ipAddress  The IP address to look up.
      * @return LocationData The geolocation data.
      *
-     * @throws \Denprog\Meridian\Exceptions\InvalidIpAddressException If the IP address is invalid.
-     * @throws \Denprog\Meridian\Exceptions\GeoIpDatabaseException If there's an issue with the GeoIP database (e.g., not found, corrupted).
-     * @throws \Denprog\Meridian\Exceptions\GeoIpLookupException If the lookup fails for other reasons specific to the driver.
+     * @throws InvalidIpAddressException If the IP address is invalid.
+     * @throws GeoIpDatabaseException If there's an issue with the GeoIP database (e.g., not found, corrupted).
+     * @throws GeoIpLookupException If the lookup fails for other reasons specific to the driver.
      */
     public function lookup(string $ipAddress): LocationData;
 

@@ -87,9 +87,6 @@ return [
         |
         */
         'session' => [
-            // Set to true to store the resolved LocationData in the session.
-            'store' => env('MERIDIAN_GEOLOCATION_SESSION_STORE', false),
-
             // The session key under which the LocationData will be stored.
             'key' => env('MERIDIAN_GEOLOCATION_SESSION_KEY', 'meridian_location'),
         ],

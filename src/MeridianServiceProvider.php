@@ -123,7 +123,6 @@ class MeridianServiceProvider extends BaseServiceProvider
 
     /**
      * Register the GeoIP driver based on configuration.
-     *
      */
     protected function registerGeoIpDriver(): void
     {

@@ -83,7 +83,7 @@ class UpdateGeoipDbCommand extends Command
                 foreach ($errors as $error) {
                     if (is_string($error)) {
                         $this->error("Error updating GeoIP database: $error");
-                        $logger->error('GeoIP DB Update Error: ' . $error);
+                        $logger->error('GeoIP DB Update Error: '.$error);
                     }
                 }
                 $this->warn('GeoIP database update process completed with errors.');
@@ -96,7 +96,7 @@ class UpdateGeoipDbCommand extends Command
                 foreach ($updatedFiles as $file) {
                     if (is_string($file)) {
                         $this->line("- $file");
-                        $logger->info('GeoIP DB Updated: ' . $file);
+                        $logger->info('GeoIP DB Updated: '.$file);
                     }
                 }
             } else {

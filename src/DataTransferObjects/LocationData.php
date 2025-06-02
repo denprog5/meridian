@@ -79,7 +79,7 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -115,7 +115,6 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
                $this->raw === null;
     }
 
-
     /**
      * Get the instance as an array.
      *
@@ -142,7 +141,6 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
      * Convert the object to its JSON representation.
      *
      * @param  int  $options
-     * @return string|false
      */
     public function toJson($options = 0): string|false
     {

@@ -19,7 +19,6 @@ final readonly class GeoLocationService implements GeoLocationServiceContract
 
     /**
      * GeoLocationService constructor.
-     *
      */
     public function __construct(
         private GeoIpDriverContract $driver
@@ -78,7 +77,7 @@ final readonly class GeoLocationService implements GeoLocationServiceContract
             /** @var array<string, mixed>|null $data */
             $data = session()->get($this->sessionKey);
         } catch (NotFoundExceptionInterface|ContainerExceptionInterface $e) {
-            Log::error("Error retrieving location data from session: ".$e->getMessage(), ['exception' => $e]);
+            Log::error('Error retrieving location data from session: '.$e->getMessage(), ['exception' => $e]);
         }
 
         if (is_array($data)) {

@@ -9,8 +9,11 @@ use Denprog\Meridian\Exceptions\GeoIPUpdaterException;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Support\Facades\Http;
 use Psr\Log\LoggerInterface;
-use tronovav\GeoIP2Update\Client as GeoIPUpdaterClient;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use PharData;
 
 class UpdateGeoipDbCommand extends Command
 {
@@ -39,16 +42,13 @@ class UpdateGeoipDbCommand extends Command
             $licenseKey = $config->string('meridian.geolocation.drivers.maxmind_database.license_key');
             $accountId = $config->string('meridian.geolocation.drivers.maxmind_database.account_id');
             $relativeDbPath = $config->string('meridian.geolocation.drivers.maxmind_database.database_path');
-            $editions = $config->get('meridian.geolocation.drivers.maxmind_database.editions', ['GeoLite2-City']);
+            $url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz';
 
             if (empty($licenseKey)) {
                 throw new ConfigurationException('MaxMind license key is not configured (meridian.geolocation.drivers.maxmind_database.license_key).');
             }
             if (empty($relativeDbPath)) {
                 throw new ConfigurationException('MaxMind database storage path is not configured (meridian.geolocation.drivers.maxmind_database.database_path).');
-            }
-            if (empty($editions) || ! is_array($editions)) {
-                throw new ConfigurationException('MaxMind database editions are not configured correctly (meridian.geolocation.drivers.maxmind_database.editions).');
             }
 
             $absoluteStorageDirectory = storage_path('app/'.mb_ltrim(dirname($relativeDbPath), '/\\'));
@@ -63,45 +63,27 @@ class UpdateGeoipDbCommand extends Command
                 throw new GeoIPUpdaterException("GeoIP database storage directory is not writable: $absoluteStorageDirectory");
             }
 
-            $clientOptions = [
-                'license_key' => $licenseKey,
-                'dir' => $absoluteStorageDirectory,
-                'editions' => $editions,
-            ];
+            $response = Http::withBasicAuth($accountId, $licenseKey)
+                ->timeout(300)
+                ->get($url);
 
-//            if (! empty($accountId)) {
-//                $clientOptions['account_id'] = $accountId;
-//            }
+            if ($response->successful()) {
+                $contentDisposition = $response->header('Content-Disposition');
+                $filename = 'geoip_download.zip';
 
-            $client = new GeoIPUpdaterClient($clientOptions);
-            $client->run();
-
-            $updatedFiles = $client->updated();
-            $errors = $client->errors();
-
-            if (! empty($errors)) {
-                foreach ($errors as $error) {
-                    if (is_string($error)) {
-                        $this->error("Error updating GeoIP database: $error");
-                        $logger->error('GeoIP DB Update Error: '.$error);
+                if ($contentDisposition) {
+                    if (preg_match('/filename="?([^"]+)"?/', $contentDisposition, $matches)) {
+                        $filename = $matches[1];
                     }
                 }
-                $this->warn('GeoIP database update process completed with errors.');
 
-                return self::FAILURE;
-            }
+                $filePath = $absoluteStorageDirectory . '/' . $filename;
+                File::put($filePath, $response->body());
 
-            if (! empty($updatedFiles)) {
-                $this->info('Successfully updated the following GeoIP database files:');
-                foreach ($updatedFiles as $file) {
-                    if (is_string($file)) {
-                        $this->line("- $file");
-                        $logger->info('GeoIP DB Updated: '.$file);
-                    }
-                }
+                $this->processGeoLiteArchive($filePath, $absoluteStorageDirectory);
+
             } else {
-                $this->info('GeoIP databases are already up to date.');
-                $logger->info('GeoIP DB Check: Databases are up to date.');
+                throw new GeoIPUpdaterException("Failed to download GeoIP database: {$response->status()} {$response->body()}");
             }
 
             $this->info('GeoIP database update process finished successfully.');
@@ -123,6 +105,97 @@ class UpdateGeoipDbCommand extends Command
             $logger->error('GeoIP DB Update Unexpected Error: '.$e->getMessage(), ['exception' => $e]);
 
             return self::FAILURE;
+        }
+    }
+
+    /**
+     * Распаковывает архив GeoLite2 (.tar.gz), находит .mmdb файл и перемещает его
+     * в указанную директорию с заменой.
+     *
+     * @param string $archivePath Полный путь к скачанному .tar.gz файлу.
+     * @param string $targetDirectory Директория, куда нужно поместить .mmdb файл (например, storage_path('app')).
+     * @throws Exception Если возникают ошибки при обработке.
+     */
+    private function processGeoLiteArchive(
+        string $archivePath,
+        string $targetDirectory,
+    ): void
+    {
+        $tempExtractPath = $targetDirectory;
+
+        try {
+            if (!File::exists($archivePath)) {
+                throw new Exception("Архив не найден: $archivePath");
+            }
+
+            File::ensureDirectoryExists($tempExtractPath);
+
+            $phar = new PharData($archivePath);
+            $phar->decompress();
+
+            $tarPath = str_replace('.tar.gz', '.tar', $archivePath);
+            if (!File::exists($tarPath)) {
+                $tarPath = $archivePath;
+            }
+
+            $pharTar = new PharData($tarPath);
+            $pharTar->extractTo($tempExtractPath, null, true);
+
+            $this->info("Архив $archivePath распакован во временную директорию $tempExtractPath");
+
+            $foundMmdbFile = null;
+            $filesAndFolders = File::directories($tempExtractPath);
+
+            if (!empty($filesAndFolders)) {
+                $potentialMmdbDir = $filesAndFolders[0];
+                $expectedMmdbPathInArchive = $potentialMmdbDir . '/' . 'GeoLite2-City.mmdb';
+                if (File::exists($expectedMmdbPathInArchive)) {
+                    $foundMmdbFile = $expectedMmdbPathInArchive;
+                }
+            }
+
+            if (!$foundMmdbFile) {
+                $allFiles = File::allFiles($tempExtractPath);
+                foreach ($allFiles as $file) {
+                    if ($file->getFilename() === 'GeoLite2-City.mmdb') {
+                        $foundMmdbFile = $file->getRealPath();
+                        break;
+                    }
+                }
+            }
+
+            if (!$foundMmdbFile) {
+                throw new Exception("Файл GeoLite2-City.mmdb не найден в распакованном архиве $archivePath. Содержимое $tempExtractPath: " . implode(', ', File::allFiles($tempExtractPath)));
+            }
+
+            File::ensureDirectoryExists($targetDirectory);
+            $finalMmdbPath = rtrim($targetDirectory, '/') . '/' . 'GeoLite2-City.mmdb';
+
+            if (File::move($foundMmdbFile, $finalMmdbPath)) {
+                $this->info("Файл GeoLite2-City.mmdb успешно перемещен в $finalMmdbPath с заменой.");
+            } else {
+                throw new Exception("Не удалось переместить файл $foundMmdbFile в $finalMmdbPath");
+            }
+
+        } catch (Exception $e) {
+            Log::error("Ошибка при обработке архива GeoLite: " . $e->getMessage() . " (Архив: $archivePath)");
+            throw $e;
+        } finally {
+            if (File::isDirectory($tempExtractPath)) {
+                File::deleteDirectory($tempExtractPath);
+                $this->info("Временная директория $tempExtractPath удалена.");
+            }
+
+            $tarPathAfterDecompress = str_replace('.tar.gz', '.tar', $archivePath);
+            if ($tarPathAfterDecompress !== $archivePath && File::exists($tarPathAfterDecompress)) {
+                File::delete($tarPathAfterDecompress);
+                $this->info("Промежуточный .tar файл $tarPathAfterDecompress удален.");
+            }
+
+            if (File::exists($archivePath)) {
+                File::delete($archivePath);
+                $this->info("Скачанный архив $archivePath удален после обработки.");
+            }
         }
     }
 }

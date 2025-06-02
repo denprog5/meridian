@@ -9,11 +9,6 @@ use GeoIp2\Exception\AddressNotFoundException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 
-$defaultConfig = [
-    'meridian.geolocation.session.store' => false,
-    'meridian.geolocation.session.key' => 'meridian_location',
-];
-
 beforeEach(function (): void {
     Config::set('meridian.geolocation.session.key', 'meridian_location');
     Config::set('meridian.geolocation.driver', 'maxmind_database');

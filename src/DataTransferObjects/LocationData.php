@@ -62,7 +62,7 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
             timezone: $record->location->timeZone ?? null,
             accuracyRadius: $record->location->accuracyRadius ?? null,
             isInEuropeanUnion: $record->country->isInEuropeanUnion ?? false,
-            raw: $record->raw ?? null
+            raw: $record->jsonSerialize()
         );
     }
 
@@ -75,6 +75,25 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
     public static function empty(string $ipAddress): self
     {
         return new self(ipAddress: $ipAddress);
+    }
+
+    /**
+     * Checks if the location data is essentially empty (all optional fields are null).
+     *
+     * @return bool
+     */
+    public function isEmpty(): bool
+    {
+        return $this->countryCode === null &&
+               $this->countryName === null &&
+               $this->cityName === null &&
+               $this->postalCode === null &&
+               $this->latitude === null &&
+               $this->longitude === null &&
+               $this->timezone === null &&
+               $this->accuracyRadius === null &&
+               $this->isInEuropeanUnion === false && // Default for empty
+               $this->raw === null;
     }
 
     /**

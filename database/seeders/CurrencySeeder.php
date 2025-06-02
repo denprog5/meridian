@@ -52,7 +52,9 @@ class CurrencySeeder extends Seeder
         }
 
         $tableName = (new Currency())->getTable();
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table($tableName)->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         if (! $this->command->getOutput()->isQuiet()) {
             $this->command->getOutput()->progressStart(count($currenciesArray));

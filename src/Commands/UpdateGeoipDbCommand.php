@@ -39,13 +39,13 @@ class UpdateGeoipDbCommand extends Command
         try {
             $licenseKey = $config->get('meridian.geolocation.drivers.maxmind_database.license_key');
             $accountId = $config->get('meridian.geolocation.drivers.maxmind_database.account_id'); // Optional
-            $dbPath = $config->get('meridian.geolocation.drivers.maxmind_database.database_path');
+            $relativeDbPath = $config->get('meridian.geolocation.drivers.maxmind_database.database_path');
             $editions = $config->get('meridian.geolocation.drivers.maxmind_database.editions', ['GeoLite2-City']);
 
             if (empty($licenseKey)) {
                 throw new ConfigurationException('MaxMind license key is not configured (meridian.geolocation.drivers.maxmind_database.license_key).');
             }
-            if (empty($dbPath)) {
+            if (empty($relativeDbPath)) {
                 throw new ConfigurationException('MaxMind database storage path is not configured (meridian.geolocation.drivers.maxmind_database.database_path).');
             }
             if (empty($editions) || !is_array($editions)) {
@@ -53,22 +53,23 @@ class UpdateGeoipDbCommand extends Command
             }
 
             // The tronovav/geoip2-update library expects the *directory* where the .mmdb files will be stored.
-            // Our $dbPath config currently points to the *file* itself.
-            // We need to ensure the directory exists and is writable.
-            $storageDirectory = dirname($dbPath);
-            if (!is_dir($storageDirectory)) {
-                if (!mkdir($storageDirectory, 0755, true)) {
-                    throw new GeoIPUpdaterException("Failed to create GeoIP database storage directory: {$storageDirectory}");
+            // Our config points to the *file* itself, relative to storage/app.
+            // We need to derive the absolute directory path and ensure it exists and is writable.
+            $absoluteStorageDirectory = storage_path('app/' . ltrim(dirname($relativeDbPath), '/\\'));
+
+            if (!is_dir($absoluteStorageDirectory)) {
+                if (!mkdir($absoluteStorageDirectory, 0755, true)) {
+                    throw new GeoIPUpdaterException("Failed to create GeoIP database storage directory: {$absoluteStorageDirectory}");
                 }
-                $this->line("Created storage directory: {$storageDirectory}");
+                $this->line("Created storage directory: {$absoluteStorageDirectory}");
             }
-            if (!is_writable($storageDirectory)) {
-                 throw new GeoIPUpdaterException("GeoIP database storage directory is not writable: {$storageDirectory}");
+            if (!is_writable($absoluteStorageDirectory)) {
+                 throw new GeoIPUpdaterException("GeoIP database storage directory is not writable: {$absoluteStorageDirectory}");
             }
 
             $clientOptions = [
                 'license_key' => $licenseKey,
-                'dir' => $storageDirectory, // Use the directory path
+                'dir' => $absoluteStorageDirectory, // Use the absolute directory path
                 'editions' => $editions,
             ];
 

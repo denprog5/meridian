@@ -31,11 +31,13 @@ final class MaxMindDatabaseDriver implements GeoIpDriverContract
      */
     public function __construct(private readonly ConfigRepository $config)
     {
-        $this->databasePath = $this->config->get('meridian.geolocation.drivers.maxmind_database.database_path');
+        $relativePath = $this->config->get('meridian.geolocation.drivers.maxmind_database.database_path');
 
-        if (empty($this->databasePath)) {
+        if (empty($relativePath)) {
             throw new ConfigurationException('MaxMind database path is not configured.');
         }
+        // Ensure the path is treated as relative to storage/app/
+        $this->databasePath = storage_path('app/' . ltrim($relativePath, '/\\'));
     }
 
     /**

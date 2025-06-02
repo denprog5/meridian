@@ -59,6 +59,9 @@ return [
                 'database_path' => 'meridian/geoip/GeoLite2-City.mmdb',
                 // You can also use an absolute path if the database is stored elsewhere:
                 // 'database_path' => database_path('maxmind/GeoLite2-City.mmdb'),
+                'editions' => [
+                    env('MAXMIND_EDITION', 'GeoLite2-City'),
+                ],
             ],
 
             'ip_api_com' => [
@@ -72,6 +75,23 @@ return [
             //     'base_url' => 'http://api.ipstack.com/',
             //     'pro_version' => false, // Set to true if using a paid plan for HTTPS
             // ],
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Session Storage for Geolocation Data
+        |--------------------------------------------------------------------------
+        |
+        | Configure if and how the resolved geolocation data should be stored
+        | in the user's session for subsequent requests.
+        |
+        */
+        'session' => [
+            // Set to true to store the resolved LocationData in the session.
+            'store' => env('MERIDIAN_GEOLOCATION_SESSION_STORE', false),
+
+            // The session key under which the LocationData will be stored.
+            'key' => env('MERIDIAN_GEOLOCATION_SESSION_KEY', 'meridian_location'),
         ],
     ],
 

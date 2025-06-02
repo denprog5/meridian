@@ -12,12 +12,17 @@ use Denprog\Meridian\Contracts\CurrencyServiceContract;
 use Denprog\Meridian\Contracts\ExchangeRateProvider as ExchangeRateProviderContract;
 use Denprog\Meridian\Contracts\LanguageServiceContract;
 use Denprog\Meridian\Contracts\UpdateExchangeRateContract;
+use Denprog\Meridian\Contracts\GeoLocationServiceContract;
+use Denprog\Meridian\Contracts\GeoIpDriverContract;
 use Denprog\Meridian\Providers\FrankfurterAppProvider;
 use Denprog\Meridian\Services\CountryService;
 use Denprog\Meridian\Services\CurrencyConverterService;
 use Denprog\Meridian\Services\CurrencyService;
 use Denprog\Meridian\Services\LanguageService;
 use Denprog\Meridian\Services\UpdateExchangeRateService;
+use Denprog\Meridian\Services\GeoLocationService;
+use Denprog\Meridian\Services\Drivers\GeoIP\MaxMindDatabaseDriver;
+use Denprog\Meridian\Exceptions\ConfigurationException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
@@ -61,6 +66,10 @@ class MeridianServiceProvider extends BaseServiceProvider
         $this->app->singleton(LanguageServiceContract::class, LanguageService::class);
         $this->app->singleton(CurrencyConverterContract::class, CurrencyConverterService::class);
         $this->app->singleton(UpdateExchangeRateContract::class, UpdateExchangeRateService::class);
+
+        // GeoLocation Services
+        $this->app->singleton(GeoLocationServiceContract::class, GeoLocationService::class);
+        $this->registerGeoIpDriver();
     }
 
     /**
@@ -107,7 +116,37 @@ class MeridianServiceProvider extends BaseServiceProvider
             $this->commands([
                 InstallCommand::class,
                 UpdateExchangeRatesCommand::class,
+                \Denprog\Meridian\Commands\UpdateGeoipDbCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Register the GeoIP driver based on configuration.
+     *
+     * @throws ConfigurationException
+     */
+    protected function registerGeoIpDriver(): void
+    {
+        $defaultDriver = $this->app['config']->get('meridian.geolocation.default_driver');
+
+        match ($defaultDriver) {
+            'maxmind_database' => $this->app->singleton(GeoIpDriverContract::class, MaxMindDatabaseDriver::class),
+            // Add other drivers here as they are implemented
+            // default => throw new ConfigurationException("Unsupported GeoIP driver: {\$defaultDriver}"),
+            default => $this->app->bind(GeoIpDriverContract::class, function ($app) use ($defaultDriver) {
+                // Attempt to resolve a custom driver if not 'maxmind_database'
+                // This allows users to define their own driver classes.
+                // For simplicity, we'll assume a convention or require explicit mapping if more complex.
+                // For now, if it's not maxmind_database, we throw an error if it's not a known custom one (which is none yet).
+                $driverConfigPath = "meridian.geolocation.drivers.{$defaultDriver}.class";
+                $customDriverClass = $this->app['config']->get($driverConfigPath);
+
+                if ($customDriverClass && class_exists($customDriverClass) && is_subclass_of($customDriverClass, GeoIpDriverContract::class)) {
+                    return $app->make($customDriverClass);
+                }
+                throw new ConfigurationException("Unsupported or unconfigured GeoIP driver: {$defaultDriver}");
+            }),
+        };
     }
 }

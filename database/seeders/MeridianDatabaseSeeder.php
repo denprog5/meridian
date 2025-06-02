@@ -16,8 +16,8 @@ class MeridianDatabaseSeeder extends Seeder
         $this->command->info('Seeding Meridian package data...');
 
         $this->call([
-            CountrySeeder::class,
             CurrencySeeder::class,
+            CountrySeeder::class,
             LanguageSeeder::class,
             CountryLanguageSeeder::class,
             // Add other package seeders here

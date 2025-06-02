@@ -1,0 +1,29 @@
+<?php
+
+namespace Denprog\Meridian\Facades;
+
+use Denprog\Meridian\Contracts\GeoLocationServiceContract;
+use Denprog\Meridian\DataTransferObjects\LocationData;
+use Illuminate\Support\Facades\Facade;
+
+/**
+ * @method static LocationData lookup(string $ipAddress)
+ * @method static string getDriverIdentifier()
+ * @method static void storeLocationInSession(LocationData $locationData)
+ * @method static LocationData|null getLocationFromSession()
+ * @method static void clearLocationFromSession()
+ *
+ * @see \Denprog\Meridian\Contracts\GeoLocationServiceContract
+ */
+class GeoLocator extends Facade
+{
+    /**
+     * Get the registered name of the component.
+     *
+     * @return string
+     */
+    protected static function getFacadeAccessor(): string
+    {
+        return GeoLocationServiceContract::class;
+    }
+}

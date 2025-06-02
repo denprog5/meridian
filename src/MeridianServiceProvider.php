@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Denprog\Meridian;
 
 use Denprog\Meridian\Commands\InstallCommand;
+use Denprog\Meridian\Commands\InstallDataCommand; // Added this line
 use Denprog\Meridian\Commands\UpdateExchangeRatesCommand;
 use Denprog\Meridian\Contracts\CountryServiceContract;
 use Denprog\Meridian\Contracts\CurrencyConverterContract;
@@ -117,6 +118,7 @@ class MeridianServiceProvider extends BaseServiceProvider
                 InstallCommand::class,
                 UpdateExchangeRatesCommand::class,
                 Commands\UpdateGeoipDbCommand::class,
+                InstallDataCommand::class,
             ]);
         }
     }

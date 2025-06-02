@@ -10,7 +10,7 @@ use Denprog\Meridian\Exceptions\GeoIpLookupException;
 use Denprog\Meridian\Exceptions\InvalidIpAddressException;
 use GeoIp2\Database\Reader;
 use GeoIp2\Exception\AddressNotFoundException;
-use GeoIp2\Exception\InvalidDatabaseException;
+use MaxMind\Db\Reader\InvalidDatabaseException as MaxMindDbInvalidDatabaseException;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use InvalidArgumentException;
 
@@ -65,10 +65,10 @@ final class MaxMindDatabaseDriver implements GeoIpDriverContract
         } catch (AddressNotFoundException) {
             // IP address not found in the database, return empty DTO
             return LocationData::empty($ipAddress);
-        } catch (InvalidDatabaseException $e) {
+        } catch (MaxMindDbInvalidDatabaseException $e) {
             throw new GeoIpDatabaseException("Invalid GeoIP database: {$e->getMessage()}", 0, $e);
         } catch (InvalidArgumentException $e) { // Thrown by Reader constructor for invalid locale
-            throw new ConfigurationException("GeoIP Reader configuration error: {$e->getMessage()}", 0, $e);
+            throw new \Exception("DIAGNOSTIC: GeoIP Reader configuration error: {$e->getMessage()}", 0, $e);
         } catch (\Exception $e) {
             // Catch-all for other unexpected errors during lookup
             throw new GeoIpLookupException("GeoIP lookup failed: {$e->getMessage()}", 0, $e);

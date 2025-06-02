@@ -27,10 +27,13 @@ final class MaxMindDatabaseDriver implements GeoIpDriverContract
      * MaxMindDatabaseDriver constructor.
      *
      * @param ConfigRepository $config
+     * @param Reader $reader
      * @throws ConfigurationException If the database path is not configured.
      */
-    public function __construct(private readonly ConfigRepository $config)
-    {
+    public function __construct(
+        private readonly ConfigRepository $config,
+        private readonly Reader $reader
+    ) {
         $relativePath = $this->config->get('meridian.geolocation.drivers.maxmind_database.database_path');
 
         if (empty($relativePath)) {
@@ -38,6 +41,8 @@ final class MaxMindDatabaseDriver implements GeoIpDriverContract
         }
         // Ensure the path is treated as relative to storage/app/
         $this->databasePath = storage_path('app/' . ltrim($relativePath, '/\\'));
+        // The injected Reader should ideally be pre-configured with this path,
+        // but databasePath is kept for file_exists checks for now.
     }
 
     /**
@@ -54,8 +59,8 @@ final class MaxMindDatabaseDriver implements GeoIpDriverContract
         }
 
         try {
-            $reader = new Reader($this->databasePath);
-            $record = $reader->city($ipAddress);
+            // Use the injected reader instance
+            $record = $this->reader->city($ipAddress);
             return LocationData::fromMaxMindRecord($record, $ipAddress);
         } catch (AddressNotFoundException) {
             // IP address not found in the database, return empty DTO

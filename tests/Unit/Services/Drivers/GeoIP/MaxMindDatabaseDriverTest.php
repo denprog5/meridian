@@ -6,12 +6,14 @@ use Denprog\Meridian\Contracts\GeoIpDriverContract;
 use Denprog\Meridian\DataTransferObjects\LocationData;
 use Denprog\Meridian\Exceptions\ConfigurationException;
 use Denprog\Meridian\Exceptions\GeoIpDatabaseException;
+use Denprog\Meridian\Exceptions\GeoIpLookupException;
 use Denprog\Meridian\Exceptions\InvalidIpAddressException;
 use Denprog\Meridian\Services\Drivers\GeoIP\MaxMindDatabaseDriver;
 use GeoIp2\Database\Reader;
 use GeoIp2\Exception\AddressNotFoundException;
-use GeoIp2\Exception\InvalidDatabaseException;
-use GeoIp2\Model\City as MaxMindCity;
+use GeoIp2\Exception\InvalidDatabaseException as GeoIpInvalidDatabaseException;
+
+use GeoIp2\Model\City as GeoIp2City;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use \Mockery;
 use \Mockery\MockInterface;
@@ -26,14 +28,16 @@ const UNROUTABLE_IP = '10.0.0.1'; // Example private/unroutable IP
 $configMock;
 
 /** @var MockInterface&Reader */
-$readerMock;
+$mockReader;
 
 /** @var MaxMindDatabaseDriver */
 $driver;
 
+/** @var MockInterface&Reader */
+$genericReaderMock;
+
 beforeEach(function () {
     $this->configMock = Mockery::mock(ConfigRepository::class);
-    // $this->readerMock = Mockery::mock(Reader::class); // Mock Reader instance if needed for specific tests
 
     // Default config mock for database path
     $this->configMock->shouldReceive('get')
@@ -45,7 +49,8 @@ beforeEach(function () {
     // We will often need to mock the Reader constructor or its methods.
     // For now, we initialize the driver, but specific tests might need to re-initialize
     // with a more controlled Reader mock.
-    // $this->driver = new MaxMindDatabaseDriver($this->configMock);
+    $this->genericReaderMock = Mockery::mock(Reader::class);
+    $this->driver = new MaxMindDatabaseDriver($this->configMock, $this->genericReaderMock);
 });
 
 describe('MaxMindDatabaseDriver Construction', function () {
@@ -54,7 +59,7 @@ describe('MaxMindDatabaseDriver Construction', function () {
             ->with(TEST_DB_PATH_CONFIG_KEY)
             ->once()
             ->andReturnNull();
-        new MaxMindDatabaseDriver($this->configMock);
+        new MaxMindDatabaseDriver($this->configMock, $this->genericReaderMock);
     })->throws(ConfigurationException::class, 'MaxMind database path is not configured.');
 
     test('constructor throws ConfigurationException if database_path is empty', function () {
@@ -62,7 +67,7 @@ describe('MaxMindDatabaseDriver Construction', function () {
             ->with(TEST_DB_PATH_CONFIG_KEY)
             ->once()
             ->andReturn('');
-        new MaxMindDatabaseDriver($this->configMock);
+        new MaxMindDatabaseDriver($this->configMock, $this->genericReaderMock);
     })->throws(ConfigurationException::class, 'MaxMind database path is not configured.');
 
     test('constructor resolves database path correctly relative to storage_path', function () {
@@ -73,7 +78,8 @@ describe('MaxMindDatabaseDriver Construction', function () {
             ->once()
             ->andReturn('geoip/custom.mmdb');
 
-        $driver = new MaxMindDatabaseDriver($config);
+        $localReaderMock = Mockery::mock(Reader::class);
+        $driver = new MaxMindDatabaseDriver($config, $localReaderMock);
 
         // Use reflection to check the private $databasePath property
         $reflection = new ReflectionClass($driver);
@@ -95,7 +101,7 @@ describe('MaxMindDatabaseDriver Construction', function () {
 
 describe('MaxMindDatabaseDriver - getIdentifier()', function () {
     test('getIdentifier returns correct driver identifier', function () {
-        $driver = new MaxMindDatabaseDriver($this->configMock);
+        $driver = new MaxMindDatabaseDriver($this->configMock, $this->genericReaderMock);
         expect($driver->getIdentifier())->toBe('maxmind_database');
     });
 });
@@ -114,7 +120,8 @@ describe('MaxMindDatabaseDriver - Lookup Method Input Validation and DB File Che
 
         // Ensure a driver instance is typically available
         // Specific tests can override $this->configMock as needed before instantiation
-        $this->driver = new MaxMindDatabaseDriver($this->configMock);
+        // Use the genericReaderMock from the global beforeEach
+        $this->driver = new MaxMindDatabaseDriver($this->configMock, $this->genericReaderMock);
     });
 
     test('lookup throws InvalidIpAddressException for an invalid IP address', function () {
@@ -149,14 +156,36 @@ describe('MaxMindDatabaseDriver - Lookup Method with GeoIP2 Reader Interactions'
         $mockFileExists = true; // Assume DB file exists and is readable for these tests
         $mockIsReadable = true;
 
-        $this->driver = new MaxMindDatabaseDriver($this->configMock);
+        // The driver for this group is initialized later, after $this->mockReader is set up.
 
         // This is the mock for the GeoIp2\Model\City object returned by the reader
         $this->mockGeoIpCityRecord = Mockery::mock(GeoIp2City::class);
-        $this->mockGeoIpCityRecord->country = (object)['isoCode' => 'US', 'name' => 'United States', 'isInEuropeanUnion' => false];
-        $this->mockGeoIpCityRecord->city = (object)['name' => 'Mountain View'];
-        $this->mockGeoIpCityRecord->postal = (object)['code' => '94043'];
-        $this->mockGeoIpCityRecord->location = (object)['latitude' => 37.422, 'longitude' => -122.084, 'timeZone' => 'America/Los_Angeles', 'accuracyRadius' => 10];
+
+        // Create stdClass objects to represent the nested record data
+        $countryData = new \stdClass();
+        $countryData->isoCode = 'US';
+        $countryData->name = 'United States';
+        $countryData->isInEuropeanUnion = false;
+
+        $cityData = new \stdClass();
+        $cityData->name = 'Mountain View';
+
+        $postalData = new \stdClass();
+        $postalData->code = '94043';
+
+        $locationData = new \stdClass();
+        $locationData->latitude = 37.422;
+        $locationData->longitude = -122.084;
+        $locationData->timeZone = 'America/Los_Angeles';
+        $locationData->accuracyRadius = 10;
+
+        // Configure the main mockGeoIpCityRecord to return these stdClass objects by mocking public property access
+        $this->mockGeoIpCityRecord->shouldReceive('country')->andReturn($countryData);
+        $this->mockGeoIpCityRecord->shouldReceive('city')->andReturn($cityData);
+        $this->mockGeoIpCityRecord->shouldReceive('postal')->andReturn($postalData);
+        $this->mockGeoIpCityRecord->shouldReceive('location')->andReturn($locationData);
+
+        // Mock jsonSerialize method
         $this->mockGeoIpCityRecord->shouldReceive('jsonSerialize')->andReturn([
             'country' => ['iso_code' => 'US', 'names' => ['en' => 'United States'], 'is_in_european_union' => false],
             'city' => ['names' => ['en' => 'Mountain View']],
@@ -165,12 +194,17 @@ describe('MaxMindDatabaseDriver - Lookup Method with GeoIP2 Reader Interactions'
         ]);
 
         // This is the mock for the GeoIp2\Database\Reader class itself
-        // We use 'overload' to mock the 'new Reader(...)' instantiation
-        $this->readerMock = Mockery::mock('overload:' . Reader::class);
+        $this->mockReader = Mockery::mock(Reader::class);
+        // Initialize driver with the specific mockReader for this test group
+        $this->driver = new MaxMindDatabaseDriver($this->configMock, $this->mockReader);
+    });
+
+    afterEach(function () {
+        Mockery::close(); // Clean up Mockery state, especially for 'overload' mocks
     });
 
     test('lookup returns LocationData on successful IP lookup', function () {
-        $this->readerMock->shouldReceive('city')->with(VALID_IP)->once()->andReturn($this->mockGeoIpCityRecord);
+        $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andReturn($this->mockGeoIpCityRecord);
 
         $locationData = $this->driver->lookup(VALID_IP);
 
@@ -182,7 +216,7 @@ describe('MaxMindDatabaseDriver - Lookup Method with GeoIP2 Reader Interactions'
     });
 
     test('lookup returns empty LocationData when IP is not found in database', function () {
-        $this->readerMock->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new AddressNotFoundException('IP not found.'));
+        $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new AddressNotFoundException('IP not found.'));
 
         $locationData = $this->driver->lookup(VALID_IP);
 
@@ -192,20 +226,21 @@ describe('MaxMindDatabaseDriver - Lookup Method with GeoIP2 Reader Interactions'
     });
 
     test('lookup throws GeoIpDatabaseException if Reader throws InvalidDatabaseException', function () {
-        $this->readerMock->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new GeoIpInvalidDatabaseException('Invalid DB format.'));
+        $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new GeoIpInvalidDatabaseException('Invalid DB format.'));
 
         $this->driver->lookup(VALID_IP);
     })->throws(GeoIpDatabaseException::class, 'Invalid GeoIP database: Invalid DB format.');
 
     test('lookup throws ConfigurationException if Reader throws InvalidArgumentException', function () {
         // GeoIP2\Exception\InvalidArgumentException, not the generic PHP one
-        $this->readerMock->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new GeoIpInvalidArgumentException('Bad argument for reader.'));
+        $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new \InvalidArgumentException('Invalid reader argument.'));
 
         $this->driver->lookup(VALID_IP);
-    })->throws(ConfigurationException::class, 'GeoIP Reader configuration error: Bad argument for reader.');
+    })->throws(ConfigurationException::class, 'GeoIP Reader configuration error: Invalid reader argument.')
+          ->expect(fn (ConfigurationException $e) => expect($e->getPrevious())->toBeInstanceOf(\InvalidArgumentException::class));
 
     test('lookup throws GeoIpLookupException for other generic Reader exceptions', function () {
-        $this->readerMock->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new \RuntimeException('Generic reader error.')); // Using a generic RuntimeException
+        $this->mockReader->shouldReceive('city')->with(VALID_IP)->once()->andThrow(new \RuntimeException('Generic reader error.')); // Using a generic RuntimeException
 
         $this->driver->lookup(VALID_IP);
     })->throws(GeoIpLookupException::class, 'GeoIP lookup failed: Generic reader error.');

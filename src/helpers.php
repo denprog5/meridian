@@ -5,7 +5,11 @@ declare(strict_types=1);
 use Denprog\Meridian\Contracts\CountryServiceContract;
 use Denprog\Meridian\Contracts\CurrencyConverterContract;
 use Denprog\Meridian\Contracts\CurrencyServiceContract;
+use Denprog\Meridian\Contracts\GeoLocationServiceContract;
 use Denprog\Meridian\Contracts\LanguageServiceContract;
+use Denprog\Meridian\DataTransferObjects\LocationData;
+use Denprog\Meridian\Exceptions\GeoIpLookupException;
+use Denprog\Meridian\Exceptions\InvalidIpAddressException;
 use Denprog\Meridian\Models\Country;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\Language;
@@ -78,6 +82,27 @@ if (! function_exists('language')) {
 
         if ($languageCode !== null) {
             return $service->findByCode($languageCode);
+        }
+
+        return $service;
+    }
+}
+
+if (! function_exists('geoLocation')) {
+    /**
+     * Get the GeoLocationServiceContract instance.
+     */
+    function geoLocation(?string $ipAddress = null): GeoLocationServiceContract|LocationData
+    {
+        /** @var GeoLocationServiceContract $service */
+        $service = app(GeoLocationServiceContract::class);
+
+        if ($ipAddress !== null) {
+            try {
+                return $service->lookup($ipAddress);
+            } catch (GeoIpLookupException|InvalidIpAddressException $e) {
+                Log::error($e->getMessage());
+            }
         }
 
         return $service;

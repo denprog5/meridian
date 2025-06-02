@@ -55,7 +55,7 @@ return [
             'maxmind_database' => [
                 'license_key' => env('MAXMIND_LICENSE_KEY'),
                 'account_id' => env('MAXMIND_ACCOUNT_ID'),
-                'database_path' => 'meridian/geoip/',
+                'database_path' => 'meridian/geoip',
                 'editions' => [
                     env('MAXMIND_EDITION', 'GeoLite2-City'),
                 ],

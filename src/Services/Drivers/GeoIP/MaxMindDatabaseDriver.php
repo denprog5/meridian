@@ -20,8 +20,9 @@ use MaxMind\Db\Reader\InvalidDatabaseException as MaxMindDbInvalidDatabaseExcept
  */
 final readonly class MaxMindDatabaseDriver implements GeoIpDriverContract
 {
-    private const string DRIVER_IDENTIFIER = 'maxmind_database';
     public const string FILE_NAME = 'GeoLite2-City.mmdb';
+
+    private const string DRIVER_IDENTIFIER = 'maxmind_database';
 
     private Reader $reader;
 
@@ -64,7 +65,7 @@ final readonly class MaxMindDatabaseDriver implements GeoIpDriverContract
             return LocationData::empty($ipAddress);
         } catch (MaxMindDbInvalidDatabaseException $e) {
             throw new GeoIpDatabaseException("Invalid GeoIP database: {$e->getMessage()}", 0, $e);
-        } catch (InvalidArgumentException $e) { // Thrown by Reader constructor for invalid locale
+        } catch (InvalidArgumentException $e) {
             throw new InvalidArgumentException("Invalid argument error: {$e->getMessage()}", 0, $e);
         } catch (Exception $e) {
             throw new GeoIpLookupException("GeoIP lookup failed: {$e->getMessage()}", 0, $e);

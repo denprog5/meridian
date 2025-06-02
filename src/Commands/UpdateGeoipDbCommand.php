@@ -10,11 +10,11 @@ use Denprog\Meridian\Services\Drivers\GeoIP\MaxMindDatabaseDriver;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
-use Illuminate\Support\Facades\Http;
-use Psr\Log\LoggerInterface;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use PharData;
+use Psr\Log\LoggerInterface;
 
 class UpdateGeoipDbCommand extends Command
 {
@@ -72,13 +72,11 @@ class UpdateGeoipDbCommand extends Command
                 $contentDisposition = $response->header('Content-Disposition');
                 $filename = 'geoip_download.zip';
 
-                if ($contentDisposition) {
-                    if (preg_match('/filename="?([^"]+)"?/', $contentDisposition, $matches)) {
-                        $filename = $matches[1];
-                    }
+                if ($contentDisposition && preg_match('/filename="?([^"]+)"?/', $contentDisposition, $matches)) {
+                    $filename = $matches[1];
                 }
 
-                $filePath = $absoluteStorageDirectory . '/' . $filename;
+                $filePath = $absoluteStorageDirectory.'/'.$filename;
                 File::put($filePath, $response->body());
 
                 $this->processGeoLiteArchive($filePath, $absoluteStorageDirectory);
@@ -113,16 +111,16 @@ class UpdateGeoipDbCommand extends Command
      * Распаковывает архив GeoLite2 (.tar.gz), находит .mmdb файл и перемещает его
      * в указанную директорию с заменой.
      *
-     * @param string $archivePath Полный путь к скачанному .tar.gz файлу.
-     * @param string $targetDirectory Директория, куда нужно поместить .mmdb файл (например, storage_path('app')).
+     * @param  string  $archivePath  Полный путь к скачанному .tar.gz файлу.
+     * @param  string  $targetDirectory  Директория, куда нужно поместить .mmdb файл (например, storage_path('app')).
+     *
      * @throws Exception Если возникают ошибки при обработке.
      */
     private function processGeoLiteArchive(
         string $archivePath,
         string $targetDirectory,
-    ): void
-    {
-        $tempExtractPath = storage_path('app/geoip_temp_extract_' . uniqid());
+    ): void {
+        $tempExtractPath = storage_path('app/geoip_temp_extract_'.uniqid());
         $fileName = MaxMindDatabaseDriver::FILE_NAME;
 
         try {
@@ -150,8 +148,8 @@ class UpdateGeoipDbCommand extends Command
 
             if (! empty($filesAndFolders)) {
                 $potentialMmdbDir = $filesAndFolders[0];
-                if (is_string($potentialMmdbDir)){
-                    $expectedMmdbPathInArchive = $potentialMmdbDir . '/' . $fileName;
+                if (is_string($potentialMmdbDir)) {
+                    $expectedMmdbPathInArchive = $potentialMmdbDir.'/'.$fileName;
 
                     if (File::exists($expectedMmdbPathInArchive)) {
                         $foundMmdbFile = $expectedMmdbPathInArchive;
@@ -159,7 +157,7 @@ class UpdateGeoipDbCommand extends Command
                 }
             }
 
-            if (! $foundMmdbFile) {
+            if ($foundMmdbFile === null) {
                 $allFiles = File::allFiles($tempExtractPath);
                 foreach ($allFiles as $file) {
                     if ($file->getFilename() === $fileName) {
@@ -170,11 +168,11 @@ class UpdateGeoipDbCommand extends Command
             }
 
             if (! $foundMmdbFile) {
-                throw new Exception("File GeoLite2-City.mmdb not found in unpacked archive $archivePath. Content of $tempExtractPath: " . implode(', ', File::allFiles($tempExtractPath)));
+                throw new Exception("File GeoLite2-City.mmdb not found in unpacked archive $archivePath. Content of $tempExtractPath: ".implode(', ', File::allFiles($tempExtractPath)));
             }
 
             File::ensureDirectoryExists($targetDirectory);
-            $finalMmdbPath = rtrim($targetDirectory, '/') . '/' . $fileName;
+            $finalMmdbPath = mb_rtrim($targetDirectory, '/').'/'.$fileName;
 
             if (File::move($foundMmdbFile, $finalMmdbPath)) {
                 $this->info("File GeoLite2-City.mmdb successfully moved to $finalMmdbPath");
@@ -183,7 +181,7 @@ class UpdateGeoipDbCommand extends Command
             }
 
         } catch (Exception $e) {
-            Log::error("Error processing GeoLite archive: " . $e->getMessage() . " (Archive: $archivePath)");
+            Log::error('Error processing GeoLite archive: '.$e->getMessage()." (Archive: $archivePath)");
             throw $e;
         } finally {
             if (File::isDirectory($tempExtractPath)) {
@@ -194,7 +192,7 @@ class UpdateGeoipDbCommand extends Command
             $tarPathAfterDecompress = str_replace('.tar.gz', '.tar', $archivePath);
             if ($tarPathAfterDecompress !== $archivePath && File::exists($tarPathAfterDecompress)) {
                 File::delete($tarPathAfterDecompress);
-                $this->info("Temporary .tar файл $tarPathAfterDecompress удален.");
+                $this->info("Temporary .tar file $tarPathAfterDecompress deleted.");
             }
 
             if (File::exists($archivePath)) {

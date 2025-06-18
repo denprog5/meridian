@@ -30,7 +30,7 @@ test('localized name returns translated name when translation exists', function 
     app()->setLocale('en');
 
     expect($language->getLocalizedName())->toBe('English')
-        ->and($languagePlCode->getLocalizedName('pl'))->toBe('Polish Test');
+        ->and($languagePlCode->getLocalizedName('pl'))->toBe('Polish');
 
     app()->setLocale($originalLocale);
 });

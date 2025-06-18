@@ -39,8 +39,8 @@ test('localized name returns translated name when translation exists', function 
     $originalLocale = app()->getLocale();
     app()->setLocale('en');
 
-    expect($country->getLocalizedName())->toBe('United States of America')
-        ->and($country->getLocalizedName('en'))->toBe('United States of America');
+    expect($country->getLocalizedName())->toBe('United States')
+        ->and($country->getLocalizedName('en'))->toBe('United States');
 
     app()->setLocale($originalLocale);
 });

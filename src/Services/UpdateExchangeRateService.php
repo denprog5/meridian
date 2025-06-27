@@ -48,17 +48,19 @@ final readonly class UpdateExchangeRateService implements UpdateExchangeRateCont
         $configuredTargetCodes = Config::get('meridian.target_currency_codes', []);
         $actualTargetCurrencyCodes = $targetCurrencyCodes ?? $configuredTargetCodes;
 
-        if (empty($actualTargetCurrencyCodes) || ! is_array($actualTargetCurrencyCodes)) {
-            Log::info('[Meridian] UpdateExchangeRateService: No target currency codes specified or configured to update.');
+        if (! is_array($actualTargetCurrencyCodes)) {
+            Log::info('[Meridian] UpdateExchangeRateService: Invalid target currency codes specified or configured to update.');
 
             return false;
         }
 
-        $actualTargetCurrencyCodes = array_filter(
-            /* @phpstan-ignore-next-line */
-            array_map('strtoupper', $actualTargetCurrencyCodes),
-            fn ($code): bool => $code !== $actualBaseCurrencyCode
-        );
+        if ($actualTargetCurrencyCodes !== []) {
+            $actualTargetCurrencyCodes = array_filter(
+                /* @phpstan-ignore-next-line */
+                array_map('strtoupper', $actualTargetCurrencyCodes),
+                fn ($code): bool => $code !== $actualBaseCurrencyCode
+            );
+        }
 
         if ($actualTargetCurrencyCodes === []) {
             Log::info("[Meridian] UpdateExchangeRateService: No valid target currency codes remaining after filtering base currency '$actualBaseCurrencyCode'.");

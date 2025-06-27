@@ -71,12 +71,6 @@ final readonly class UpdateExchangeRateService implements UpdateExchangeRateCont
             }
         }
 
-        if ($validTargetCurrencies === []) {
-            Log::info("[Meridian] UpdateExchangeRateService: No valid target currencies found to update rates for against base '$actualBaseCurrencyCode'.");
-
-            return false;
-        }
-
         $fetchedRates = $this->exchangeRateProvider->getRates($actualBaseCurrencyCode, $validTargetCurrencies, $actualDate);
 
         if ($fetchedRates === null || $fetchedRates === []) {

@@ -35,8 +35,9 @@ final readonly class MaxMindDatabaseDriver implements GeoIpDriverContract
      */
     public function __construct()
     {
+        $filename = config()->string('meridian.geolocation.drivers.maxmind_database.database_filename', self::FILE_NAME);
         $relativePath = config()->string('meridian.geolocation.drivers.maxmind_database.database_path', 'meridian/geoip/');
-        $this->databasePath = storage_path('app/'.mb_ltrim($relativePath, '/\\').'/'.self::FILE_NAME);
+        $this->databasePath = storage_path('app/'.mb_ltrim($relativePath, '/\\').'/'.$filename);
         try {
             $this->reader = new Reader($this->databasePath);
         } catch (MaxMindDbInvalidDatabaseException $e) {

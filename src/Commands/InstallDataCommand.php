@@ -49,19 +49,20 @@ class InstallDataCommand extends Command
         // 3. Publish GeoLite2-City.mmdb
         $this->line('Publishing GeoLite2-City.mmdb...');
         // Source path is relative to this Command class file, which is in src/Commands
-        $sourcePath = __DIR__.'/../../resources/GeoLite2-City.mmdb';
-        $configPathKey = 'meridian.geolocation.drivers.maxmind_database.database_path';
-        $relativeDestDir = config()->string($configPathKey);
+
+        $relativeDestFileName = config()->string('meridian.geolocation.drivers.maxmind_database.database_filename', 'GeoLite2-City.mmdb');
+        $relativeDestDir = config()->string('meridian.geolocation.drivers.maxmind_database.database_path');
+        $sourcePath = storage_path('app/'.mb_ltrim($relativeDestDir, '/\\').'/'.$relativeDestFileName);
 
         if ($relativeDestDir === '') {
-            $this->error("GeoIP database path key '$configPathKey' is not configured or invalid.");
+            $this->error("GeoIP database path 'meridian.geolocation.drivers.maxmind_database.database_path' key is not configured or invalid.");
 
             return self::FAILURE;
         }
 
         // The configured path is relative to storage_path()
         $destinationDir = storage_path($relativeDestDir);
-        $destinationPath = $destinationDir.DIRECTORY_SEPARATOR.'GeoLite2-City.mmdb';
+        $destinationPath = $destinationDir.DIRECTORY_SEPARATOR.$relativeDestFileName;
 
         if (! File::exists($sourcePath)) {
             $this->error("Source GeoIP database not found at: $sourcePath");

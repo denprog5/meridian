@@ -52,7 +52,7 @@ class UpdateGeoipDbCommand extends Command
                 throw new ConfigurationException('MaxMind database storage path is not configured (meridian.geolocation.drivers.maxmind_database.database_path).');
             }
 
-            $absoluteStorageDirectory = storage_path(mb_ltrim(dirname($relativeDbPath), '/\\'));
+            $absoluteStorageDirectory = storage_path($relativeDbPath);
 
             if (! is_dir($absoluteStorageDirectory)) {
                 if (! mkdir($absoluteStorageDirectory, 0755, true)) {

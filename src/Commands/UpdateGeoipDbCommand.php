@@ -76,7 +76,7 @@ class UpdateGeoipDbCommand extends Command
                     $filename = $matches[1];
                 }
 
-                $filePath = $absoluteStorageDirectory.'/'.$filename;
+                $filePath = $absoluteStorageDirectory.DIRECTORY_SEPARATOR.$filename;
                 File::put($filePath, $response->body());
 
                 $this->processGeoLiteArchive($filePath, $absoluteStorageDirectory);
@@ -121,7 +121,7 @@ class UpdateGeoipDbCommand extends Command
         string $targetDirectory,
     ): void {
         $tempExtractPath = storage_path('app/geoip_temp_extract_'.uniqid());
-        $fileName = MaxMindDatabaseDriver::FILE_NAME;
+        $fileName = config()->string('meridian.geolocation.drivers.maxmind_database.database_filename', MaxMindDatabaseDriver::FILE_NAME);
 
         try {
             if (! File::exists($archivePath)) {

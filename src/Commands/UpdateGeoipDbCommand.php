@@ -172,7 +172,7 @@ class UpdateGeoipDbCommand extends Command
             }
 
             File::ensureDirectoryExists($targetDirectory);
-            $finalMmdbPath = mb_rtrim($targetDirectory, '/').'/'.$fileName;
+            $finalMmdbPath = $targetDirectory.DIRECTORY_SEPARATOR.$fileName;
 
             if (File::move($foundMmdbFile, $finalMmdbPath)) {
                 $this->info("File GeoLite2-City.mmdb successfully moved to $finalMmdbPath");

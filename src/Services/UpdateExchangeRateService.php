@@ -35,7 +35,7 @@ final readonly class UpdateExchangeRateService implements UpdateExchangeRateCont
         ?array $targetCurrencyCodes = null,
         ?Carbon $date = null
     ): bool {
-        $actualBaseCurrencyCode = mb_strtoupper($baseCurrencyCode ?? Config::string('meridian.system_base_currency_code', 'USD'));
+        $actualBaseCurrencyCode = mb_strtoupper($baseCurrencyCode ?? Config::string('meridian.base_currency_code', 'USD'));
         $actualDate = ($date ?? Carbon::today())->startOfDay();
 
         $baseCurrency = $this->currencyService->findByCode($actualBaseCurrencyCode);

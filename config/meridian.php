@@ -40,6 +40,41 @@ return [
     'active_languages' => [],
 
     /*
+    |
+    | active_currencies: An array of currency codes that are currently active in the application.
+    |   Only these currencies will be available for selection or displayed in the interface.
+    |   If empty, all currencies will be available.
+    |   Example: ['USD', 'EUR']
+    |   Default: [
+    |       'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR',  'GBP', 'HKD',
+    |       'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK',
+    |       'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR',
+    |  ]
+    |
+    */
+
+    /*
+    'active_currencies' => [
+        'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR',  'GBP', 'HKD',
+        'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK',
+        'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR',
+    ],
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Target Currency Codes For Exchange Rates
+    |--------------------------------------------------------------------------
+    |
+    | target_currency_codes: An array of currency codes that are available for
+    | updating exchange rates.
+    | Example: ['USD', 'EUR']
+    |
+    */
+    'target_currency_codes' => [],
+
+
+    /*
     |--------------------------------------------------------------------------
     | Geolocation Configuration
     |--------------------------------------------------------------------------

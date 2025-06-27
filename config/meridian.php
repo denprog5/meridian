@@ -91,6 +91,20 @@ return [
                 ],
             ],
         ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Session Storage for Geolocation Data
+        |--------------------------------------------------------------------------
+        |
+        | Configure if and how the resolved geolocation data should be stored
+        | in the user's session for subsequent requests.
+        |
+        */
+        'session' => [
+            // The session key under which the LocationData will be stored.
+            'key' => env('MERIDIAN_GEOLOCATION_SESSION_KEY', 'meridian_location'),
+        ],
     ],
 
     /*

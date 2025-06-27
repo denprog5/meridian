@@ -62,12 +62,6 @@ final readonly class UpdateExchangeRateService implements UpdateExchangeRateCont
             );
         }
 
-        if ($actualTargetCurrencyCodes === []) {
-            Log::info("[Meridian] UpdateExchangeRateService: No valid target currency codes remaining after filtering base currency '$actualBaseCurrencyCode'.");
-
-            return false;
-        }
-
         $validTargetCurrencies = [];
         foreach ($actualTargetCurrencyCodes as $targetCode) {
             if ($this->currencyService->findByCode($targetCode) instanceof Currency) {

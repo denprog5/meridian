@@ -11,15 +11,15 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 
 it('returns the correct driver identifier and MaxMind driver can load the database', function (): void {
-    $relativeDirectoryForConfig = 'meridian_test_data/geoip';
-    $absoluteDirectoryToCreate = storage_path('app/'.$relativeDirectoryForConfig);
+    $relativeDirectoryForConfig = 'meridian_test_data';
+    $absoluteDirectoryToCreate = storage_path($relativeDirectoryForConfig);
 
     $mmdbFileName = 'GeoLite2-City.mmdb';
 
-    $absolutePathToActualFile = $absoluteDirectoryToCreate.'/'.$mmdbFileName;
+    $absolutePathToActualFile = $absoluteDirectoryToCreate.DIRECTORY_SEPARATOR.$mmdbFileName;
 
     $packageRootPath = dirname(__DIR__, 3);
-    $pathToResourceMmdb = $packageRootPath.'/resources/'.$mmdbFileName;
+    $pathToResourceMmdb = $packageRootPath.DIRECTORY_SEPARATOR.'resources'.DIRECTORY_SEPARATOR.$mmdbFileName;
 
     if (! File::exists($pathToResourceMmdb)) {
         $this->fail("Файл ресурса не найден по пути: $pathToResourceMmdb. Пожалуйста, убедитесь, что {$mmdbFileName} находится в директории resources/ вашего пакета.");

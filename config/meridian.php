@@ -45,11 +45,6 @@ return [
     |   Only these currencies will be available for selection or displayed in the interface.
     |   If empty, all currencies will be available.
     |   Example: ['USD', 'EUR']
-    |   Default: [
-    |       'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR',  'GBP', 'HKD',
-    |       'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK',
-    |       'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR',
-    |  ]
     |
     */
 

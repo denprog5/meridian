@@ -161,14 +161,17 @@ it('list uses cache for active currencies collection', function (): void {
 
 it('base currency returns currency from config when valid', function (): void {
     Config::set('meridian.base_currency_code', 'EUR');
-    CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
+    $baseCurrency = CurrencyFactory::new()->create(['code' => 'EUR', 'enabled' => true]);
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
 
     $service = app(CurrencyServiceContract::class);
     $base = $service->baseCurrency();
 
     expect($base)->toBeInstanceOf(Currency::class)
-        ->and($base->code)->toBe('EUR');
+        ->and($base->code)->toBe($baseCurrency->code)
+        ->and($service->baseName())->toBe($baseCurrency->name)
+        ->and($service->baseCode())->toBe($baseCurrency->code)
+        ->and($service->baseSymbol())->toBe($baseCurrency->symbol);
 
     $baseReturned = $service->baseCurrency();
 
@@ -183,7 +186,11 @@ test('get currency', function (): void {
     $service = app(CurrencyServiceContract::class);
     $currency = $service->get();
     expect($currency)->toBeInstanceOf(Currency::class)
-        ->and($currency->code)->toBe('USD');
+        ->and($currency->code)->toBe('USD')
+        ->and($service->name())->toBe($currency->name)
+        ->and($service->code())->toBe($currency->code)
+        ->and($service->symbol())->toBe($currency->symbol)
+        ->and($service->enabled())->toBeTrue();
 
     $currencyFromReturned = $service->get();
     expect($currencyFromReturned)->toBeInstanceOf(Currency::class)

@@ -93,6 +93,62 @@ final class CurrencyService implements CurrencyServiceContract
     }
 
     /**
+     * Get the name of the current display currency.
+     */
+    public function name(): string
+    {
+        return $this->get()->name;
+    }
+
+    /**
+     * Get the ISO 4217 alpha-3 currency code of the current display currency.
+     */
+    public function code(): string
+    {
+        return $this->get()->code;
+    }
+
+    /**
+     * Get the symbol of the current display currency.
+     */
+    public function symbol(): ?string
+    {
+        return $this->get()->symbol;
+    }
+
+    /**
+     * Get the enabled status of the current display currency.
+     */
+    public function enabled(): bool
+    {
+        return $this->get()->enabled;
+    }
+
+    /**
+     * Get the name of the base currency.
+     */
+    public function baseName(): string
+    {
+        return $this->baseCurrency()->name;
+    }
+
+    /**
+     * Get the ISO 4217 alpha-3 currency code of the base currency.
+     */
+    public function baseCode(): string
+    {
+        return $this->baseCurrency()->code;
+    }
+
+    /**
+     * Get the symbol of the base currency.
+     */
+    public function baseSymbol(): ?string
+    {
+        return $this->baseCurrency()->symbol;
+    }
+
+    /**
      * Sets the display currency in the session.
      *
      * @param  string  $currencyCode  The ISO 4217 alpha-3 currency code.

@@ -28,6 +28,41 @@ interface CurrencyServiceContract
     public function get(): Currency;
 
     /**
+     * Get the name of the current display currency.
+     */
+    public function name(): string;
+
+    /**
+     * Get the ISO 4217 alpha-3 currency code of the current display currency.
+     */
+    public function code(): string;
+
+    /**
+     * Get the symbol of the current display currency.
+     */
+    public function symbol(): ?string;
+
+    /**
+     * Get the enabled status of the current display currency.
+     */
+    public function enabled(): bool;
+
+    /**
+     * Get the name of the base currency.
+     */
+    public function baseName(): string;
+
+    /**
+     * Get the ISO 4217 alpha-3 currency code of the base currency.
+     */
+    public function baseCode(): string;
+
+    /**
+     * Get the symbol of the base currency.
+     */
+    public function baseSymbol(): ?string;
+
+    /**
      * Sets the display currency in the session.
      * If the provided currency code is not active or invalid, it defaults to the base currency.
      *

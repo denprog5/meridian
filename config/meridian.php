@@ -68,6 +68,8 @@ return [
     */
     'target_currency_codes' => [],
 
+    'default_country_iso_code' => env('MERIDIAN_DEFAULT_COUNTRY_ISO_CODE', 'US'),
+
     /*
     |--------------------------------------------------------------------------
     | Geolocation Configuration

@@ -243,7 +243,18 @@ it('default returns country from config when valid', function (): void {
 
     expect($defaultCountry)->toBeInstanceOf(Country::class)
         ->and($defaultCountry->iso_alpha_2)->toBe($configuredCountryCode)
-        ->and($defaultCountry->id)->toBe($country->id);
+        ->and($defaultCountry->id)->toBe($country->id)
+        ->and($service->defaultContinent())->tobe($country->continent_code)
+        ->and($service->defaultName())->toBe($country->name)
+        ->and($service->defaultOfficialName())->toBe($country->official_name)
+        ->and($service->defaultNativeName())->toBe($country->native_name)
+        ->and($service->defaultCode())->toBe($country->iso_alpha_2)
+        ->and($service->defaultIsoAlpha2Code())->toBe($country->iso_alpha_2)
+        ->and($service->defaultIsoAlpha3Code())->toBe($country->iso_alpha_3)
+        ->and($service->defaultNumericCode())->toBe($country->iso_numeric)
+        ->and($service->defaultPhoneCode())->toBe($country->phone_code)
+        ->and($service->defaultCurrencyCode())->toBe($country->currency_code);
+
 });
 
 it('default returns US country when config code is not found or not set', function (): void {
@@ -322,7 +333,18 @@ it('get returns country from session when valid iso code in session', function (
 
     expect($country)->toBeInstanceOf(Country::class)
         ->and($country->id)->toBe($sessionCountry->id)
-        ->and($country->iso_alpha_2)->toBe($sessionCountryCode);
+        ->and($country->iso_alpha_2)->toBe($sessionCountryCode)
+        ->and($service->continent())->toBe($sessionCountry->continent)
+        ->and($service->name())->toBe($sessionCountry->name)
+        ->and($service->officialName())->toBe($sessionCountry->official_name)
+        ->and($service->nativeName())->toBe($sessionCountry->native_name)
+        ->and($service->code())->toBe($sessionCountry->iso_alpha_2)
+        ->and($service->isoAlpha2Code())->toBe($sessionCountry->iso_alpha_2)
+        ->and($service->isoAlpha3Code())->toBe($sessionCountry->iso_alpha_3)
+        ->and($service->numericCode())->toBe($sessionCountry->iso_numeric)
+        ->and($service->phoneCode())->toBe($sessionCountry->phone_code)
+        ->and($service->currencyCode())->toBe($sessionCountry->currency_code);
+
 });
 
 it('get returns default country when no iso code in session', function (): void {

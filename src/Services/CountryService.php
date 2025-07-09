@@ -53,6 +53,166 @@ final class CountryService implements CountryServiceContract
     }
 
     /**
+     * Get the user's selected country's continent.
+     */
+    public function continent(): Continent
+    {
+        return $this->get()->continent_code;
+    }
+
+    /**
+     * Get the user's selected country's name.
+     */
+    public function name(): string
+    {
+        return $this->get()->name;
+    }
+
+    /**
+     * Get the user's selected country's official name.
+     */
+    public function officialName(): ?string
+    {
+        return $this->get()->official_name;
+    }
+
+    /**
+     * Get the user's selected country's native name.
+     */
+    public function nativeName(): ?string
+    {
+        return $this->get()->native_name;
+    }
+
+    /**
+     * Get the user's selected country's ISO 3166-1 alpha-2 code.
+     */
+    public function code(): string
+    {
+        return $this->get()->iso_alpha_2;
+    }
+
+    /**
+     * Get the user's selected country's ISO 3166-1 alpha-2 code.
+     */
+    public function isoAlpha2Code(): string
+    {
+        return $this->get()->iso_alpha_2;
+    }
+
+    /**
+     * Get the user's selected country's ISO 3166-1 alpha-3 code.
+     */
+    public function isoAlpha3Code(): string
+    {
+        return $this->get()->iso_alpha_3;
+    }
+
+    /**
+     * Get the user's selected country's ISO 3166-1 numeric code.
+     */
+    public function numericCode(): ?string
+    {
+        return $this->get()->iso_numeric;
+    }
+
+    /**
+     * Get the user's selected country's phone calling code.
+     */
+    public function phoneCode(): ?string
+    {
+        return $this->get()->phone_code;
+    }
+
+    /**
+     * Get the user's selected country's currency code.
+     */
+    public function currencyCode(): ?string
+    {
+        return $this->get()->currency_code;
+    }
+
+    /**
+     * Get the default country's continent.
+     */
+    public function defaultContinent(): Continent
+    {
+        return $this->default()->continent_code;
+    }
+
+    /**
+     * Get the default country's name.
+     */
+    public function defaultName(): string
+    {
+        return $this->default()->name;
+    }
+
+    /**
+     * Get the default country's official name.
+     */
+    public function defaultOfficialName(): ?string
+    {
+        return $this->default()->official_name;
+    }
+
+    /**
+     * Get the default country's native name.
+     */
+    public function defaultNativeName(): ?string
+    {
+        return $this->default()->native_name;
+    }
+
+    /**
+     * Get the default country's ISO 3166-1 alpha-2 code.
+     */
+    public function defaultCode(): string
+    {
+        return $this->default()->iso_alpha_2;
+    }
+
+    /**
+     * Get the default country's ISO 3166-1 alpha-2 code.
+     */
+    public function defaultIsoAlpha2Code(): string
+    {
+        return $this->default()->iso_alpha_2;
+    }
+
+    /**
+     * Get the default country's ISO 3166-1 alpha-3 code.
+     */
+    public function defaultIsoAlpha3Code(): string
+    {
+        return $this->default()->iso_alpha_3;
+    }
+
+    /**
+     * Get the default country's ISO 3166-1 numeric code.
+     */
+    public function defaultNumericCode(): ?string
+    {
+        return $this->default()->iso_numeric;
+    }
+
+    /**
+     * Get the default country's phone calling code.
+     */
+    public function defaultPhoneCode(): ?string
+    {
+        return $this->default()->phone_code;
+    }
+
+    /**
+     * Get the default country's currency code.
+     */
+    public function defaultCurrencyCode(): ?string
+    {
+        return $this->default()->currency_code;
+    }
+
+    /**
      * Set the user's selected country in the session.
      *
      * @param  string  $countryIsoAlpha2Code  The ISO Alpha-2 code of the country.
@@ -86,13 +246,10 @@ final class CountryService implements CountryServiceContract
         $defaultIsoCodeSetting = Config::string('meridian.default_country_iso_code', 'US');
         $country = $this->findByIsoAlpha2Code($defaultIsoCodeSetting);
 
-        // If the configured/primary default wasn't found, AND it wasn't 'US' already, explicitly try 'US'.
         if (! $country instanceof Country && $defaultIsoCodeSetting !== 'US') {
-            // Log::warning("Configured default country '{$defaultIsoCodeSetting}' not found. Falling back to 'US'."); // Optional logging
             $country = $this->findByIsoAlpha2Code('US');
         }
 
-        // If, after all fallbacks, no country is found, then it's a critical problem.
         if (! $country instanceof Country) {
             throw new RuntimeException("Default country ('$defaultIsoCodeSetting' or ultimate fallback 'US') could not be found. Please ensure a valid default country exists in the database.");
         }

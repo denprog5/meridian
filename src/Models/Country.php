@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
  * Class Country
  *
  * @property int $id
- * @property string $continent_code
+ * @property Continent $continent_code
  * @property string $name
  * @property string|null $official_name
  * @property string|null $native_name
@@ -102,6 +102,14 @@ class Country extends Model
         )
             ->using(CountryLanguage::class)
             ->withPivot('status');
+    }
+
+    /**
+     * Get the continent enum instance.
+     */
+    public function getContinentAttribute(): Continent
+    {
+        return $this->continent_code;
     }
 
     /**

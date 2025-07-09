@@ -23,6 +23,146 @@ interface CountryServiceContract
     public function get(): Country;
 
     /**
+     * Get the user's selected country's continent.
+     *
+     * @return Continent The continent enum instance.
+     */
+    public function continent(): Continent;
+
+    /**
+     * Get the user's selected country's name.
+     *
+     * @return string The country name.
+     */
+    public function name(): string;
+
+    /**
+     * Get the user's selected country's official name.
+     *
+     * @return string|null The country official name, or null if not available.
+     */
+    public function officialName(): ?string;
+
+    /**
+     * Get the user's selected country's native name.
+     *
+     * @return string|null The country native name, or null if not available.
+     */
+    public function nativeName(): ?string;
+
+    /**
+     * Get the user's selected country's ISO 3166-1 alpha-2 code.
+     *
+     * @return string The country ISO 3166-1 alpha-2 code.
+     */
+    public function code(): string;
+
+    /**
+     * Get the user's selected country's ISO 3166-1 alpha-2 code.
+     *
+     * @return string The country ISO 3166-1 alpha-2 code.
+     */
+    public function isoAlpha2Code(): string;
+
+    /**
+     * Get the user's selected country's ISO 3166-1 alpha-3 code.
+     *
+     * @return string The country ISO 3166-1 alpha-3 code.
+     */
+    public function isoAlpha3Code(): string;
+
+    /**
+     * Get the user's selected country's ISO 3166-1 numeric code.
+     *
+     * @return string|null The country ISO 3166-1 numeric code, or null if not available.
+     */
+    public function numericCode(): ?string;
+
+    /**
+     * Get the user's selected country's phone calling code.
+     *
+     * @return string|null The country phone calling code, or null if not available.
+     */
+    public function phoneCode(): ?string;
+
+    /**
+     * Get the user's selected country's currency code.
+     *
+     * @return string|null The country currency code, or null if not available.
+     */
+    public function currencyCode(): ?string;
+
+    /**
+     * Get the default country's continent.
+     *
+     * @return Continent The continent enum instance.
+     */
+    public function defaultContinent(): Continent;
+
+    /**
+     * Get the default country's name.
+     *
+     * @return string The country name.
+     */
+    public function defaultName(): string;
+
+    /**
+     * Get the default country's official name.
+     *
+     * @return string|null The country official name, or null if not available.
+     */
+    public function defaultOfficialName(): ?string;
+
+    /**
+     * Get the default country's native name.
+     *
+     * @return string|null The country native name, or null if not available.
+     */
+    public function defaultNativeName(): ?string;
+
+    /**
+     * Get the default country's ISO 3166-1 alpha-2 code.
+     *
+     * @return string The country ISO 3166-1 alpha-2 code.
+     */
+    public function defaultCode(): string;
+
+    /**
+     * Get the default country's ISO 3166-1 alpha-2 code.
+     *
+     * @return string The country ISO 3166-1 alpha-2 code.
+     */
+    public function defaultIsoAlpha2Code(): string;
+
+    /**
+     * Get the default country's ISO 3166-1 alpha-3 code.
+     *
+     * @return string The country ISO 3166-1 alpha-3 code.
+     */
+    public function defaultIsoAlpha3Code(): string;
+
+    /**
+     * Get the default country's ISO 3166-1 numeric code.
+     *
+     * @return string|null The country ISO 3166-1 numeric code, or null if not available.
+     */
+    public function defaultNumericCode(): ?string;
+
+    /**
+     * Get the default country's phone calling code.
+     *
+     * @return string|null The country phone calling code, or null if not available.
+     */
+    public function defaultPhoneCode(): ?string;
+
+    /**
+     * Get the default country's currency code.
+     *
+     * @return string|null The country currency code, or null if not available.
+     */
+    public function defaultCurrencyCode(): ?string;
+
+    /**
      * Set the user's selected country in the session.
      * The country code is validated against existing and enabled countries.
      * If the country code is invalid, a warning is logged, and the session is not updated.

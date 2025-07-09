@@ -16,9 +16,8 @@ use Mockery;
 
 beforeEach(function (): void {
     Config::set('meridian.base_currency_code', 'USD');
-    Config::set('meridian.active_currency_codes', ['USD', 'EUR', 'GBP']);
-    Config::set('meridian.display_currency_session_key', 'meridian.user_display_currency');
-    Config::set('meridian.cache_duration_days.currencies', 1);
+    Config::set('meridian.active_currencies', ['USD', 'EUR', 'GBP']);
+    Config::set('meridian.cache_lifetimes.currencies', 3600);
 });
 
 it('returns all currencies', function (): void {
@@ -78,9 +77,9 @@ it('returns currency by id from cache', function (): void {
 
 it('returns currency by code', function (): void {
     $currencyService = app(CurrencyServiceContract::class);
-    $currency = CurrencyFactory::new()->create(['code' => 'XYZ']);
+    $currency = CurrencyFactory::new()->create(['code' => 'EUR']);
 
-    $foundCurrency = $currencyService->findByCode('XYZ', false);
+    $foundCurrency = $currencyService->findByCode('EUR', false);
     expect($foundCurrency)->toBeInstanceOf(Currency::class)
         ->and($foundCurrency->code)->toBe($currency->code);
 
@@ -249,12 +248,12 @@ test('get base currency when session store invalid currency', function (): void 
     CurrencyFactory::new()->create(['code' => 'USD', 'enabled' => true]);
 
     $sessionKey = CurrencyServiceContract::SESSION_CURRENCY_CODE;
-    Session::put($sessionKey, 'XYZ'); // Invalid currency code
+    Session::put($sessionKey, 'XYZ');
 
     $service = app(CurrencyServiceContract::class);
     $currency = $service->get();
     expect($currency)->toBeInstanceOf(Currency::class)
-        ->and($currency->code)->toBe('USD'); // Should fall back to base
+        ->and($currency->code)->toBe('USD');
 });
 
 test('get base currency when session store disabled currency', function (): void {
@@ -267,7 +266,7 @@ test('get base currency when session store disabled currency', function (): void
     $service = app(CurrencyServiceContract::class);
     $currency = $service->get();
     expect($currency)->toBeInstanceOf(Currency::class)
-        ->and($currency->code)->toBe('USD'); // Should fall back to base
+        ->and($currency->code)->toBe('USD');
 });
 
 test('set currency', function (): void {
@@ -280,11 +279,9 @@ test('set currency', function (): void {
     Session::shouldReceive('put')->once()->with($sessionKey, 'EUR');
     $service->set('EUR');
 
-    // Test setting an invalid currency (should default to base)
     Session::shouldReceive('put')->once()->with($sessionKey, 'USD');
     $service->set('XYZ');
 
-    // Test setting a disabled currency (should default to base)
     CurrencyFactory::new()->create(['code' => 'GBP', 'enabled' => false]);
     Session::shouldReceive('put')->once()->with($sessionKey, 'USD');
     $service->set('GBP');

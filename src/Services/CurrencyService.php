@@ -9,7 +9,6 @@ use Denprog\Meridian\Models\Currency;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
 /**
@@ -83,7 +82,6 @@ final class CurrencyService implements CurrencyServiceContract
             $currency = $this->findByCode($displayCurrencyCode);
             if (! $currency instanceof Currency || ! $currency->enabled) {
                 $currency = null;
-                Log::warning('Display currency from session not found or disabled. Falling back to base.', ['session_code' => $displayCurrencyCode]);
             }
         }
 

@@ -13,8 +13,6 @@ use Illuminate\Support\Facades\Log;
 
 const API_BASE_URL_FRANKFURTER_TEST = 'https://api.frankfurter.dev';
 
-covers(FrankfurterAppProvider::class);
-
 beforeEach(function (): void {
     Http::preventStrayRequests();
 });

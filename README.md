@@ -86,6 +86,19 @@ $usa = MeridianCountry::findByCode('US');
 
 // Get the default country (based on config)
 $default = MeridianCountry::default();
+
+// Get 
+echo MeridianCountry::name(); // United States
+echo MeridianCountry::code(); // US
+echo MeridianCountry::currencyCode() // USD
+echo MeridianCountry::nativeName() // United States
+echo MeridianCountry::continent()->name(); // North America
+echo MeridianCountry::isoAlpha2Code() // US
+echo MeridianCountry::isoAlpha3Code() // USA
+echo MeridianCountry::defaultName() // United States
+echo MeridianCountry::defaultCode() // US
+echo MeridianCountry::defaultCurrencyCode() // USD
+echo MeridianCountry::defaultNativeName() // United States
 ```
 
 ### Geolocation
@@ -98,7 +111,7 @@ $location = MeridianGeoLocator::lookup(request()->ip());
 
 if ($location->success) {
     echo 'Country: ' . $location->countryName; // e.g., United States
-    echo 'City: ' . $location->cityName;     // e.g., Mountain View
+    echo 'City: ' . $location->cityName; // e.g., Mountain View
 }
 ```
 
@@ -114,9 +127,12 @@ $currentCurrency = MeridianCurrency::get();
 MeridianCurrency::set('EUR');
 
 // Get details of the current currency
-echo MeridianCurrency::name();   // Euro
-echo MeridianCurrency::code();   // EUR
+echo MeridianCurrency::name(); // Euro
+echo MeridianCurrency::code(); // EUR
 echo MeridianCurrency::symbol(); // €
+echo MeridianCurrency::baseName() // US Dollar
+echo MeridianCurrency::baseCode() // USD
+echo MeridianCurrency::baseSymbol() // $
 ```
 
 ### Currency Conversion
@@ -126,9 +142,23 @@ use Denprog\Meridian\Facades\MeridianExchangeRate;
 
 // Convert 100 units from the base currency to the current display currency
 $convertedAmount = MeridianExchangeRate::convert(100);
+$convertedAmount = MeridianExchangeRate::convert(100, true, 'de_DE');
 
-// Fluent conversion between specific currencies
-$amountInGbp = MeridianExchangeRate::from('USD')->to('GBP')->convert(150);
+// Converts an amount between two specified currencies, optionally for a specific date.
+// Make sure you download the exchange rate for the desired currency pair on the desired date MeridianUpdateExchangeRate::update('EUR', 'USD', '2025-01-01')
+$convertedBetween = MeridianExchangeRate::convertBetween(100, 'EUR', 'USD', true, '2025-01-01');
+```
+
+### Updating Exchange Rates Manually
+
+While it's recommended to update rates via the scheduled Artisan command, you can also trigger an update manually using the `MeridianUpdateExchangeRate` facade. This will fetch and save the latest rates for all active currencies defined in your `config/meridian.php` file.
+
+```php
+use Denprog\Meridian\Facades\MeridianUpdateExchangeRate;
+
+// Fetches and saves the latest exchange rates for all active currencies.
+MeridianUpdateExchangeRate::update();
+MeridianUpdateExchangeRate::update('USD', 'GBP', '2025-01-01');
 ```
 
 ### Language Management

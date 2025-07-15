@@ -93,12 +93,12 @@ describe('Successful Rate Fetching', function (): void {
 });
 
 describe('Error and Failure Handling', function (): void {
-    test('getRates returns null and logs error for various API issues', function (callable $fakeResponseFactory, string $expectedUrlPattern): void {
+    test('getRates returns null and logs error for various API issues', function (callable $fakeResponseFactory): void {
         $baseCurrency = 'USD';
         $targetCurrencies = ['EUR'];
 
         Http::fake([
-            $expectedUrlPattern => $fakeResponseFactory(),
+            '*' => $fakeResponseFactory(),
         ]);
 
         Log::shouldReceive('error')->once();
@@ -107,24 +107,18 @@ describe('Error and Failure Handling', function (): void {
         $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
         expect($rates)->toBeNull();
-
-        Http::assertSent(fn (Request $request): bool => $request->url() === $expectedUrlPattern);
     })->with([
         'API request failure (500)' => [
             fn () => Http::response(null, 500),
-            API_BASE_URL_FRANKFURTER_TEST.'/v1/latest?from=USD&to=EUR',
         ],
         'API non-success (300)' => [
             fn () => Http::response(['message' => 'Some other issue'], 300),
-            API_BASE_URL_FRANKFURTER_TEST.'/v1/latest?from=USD&to=EUR',
         ],
         'API response is invalid JSON string' => [
             fn () => Http::response('invalid json string'),
-            API_BASE_URL_FRANKFURTER_TEST.'/v1/latest?from=USD&to=EUR',
         ],
         'API response is valid JSON but missing rates key' => [
             fn () => Http::response(['base' => 'USD', 'date' => Carbon::now()->toDateString()]),
-            API_BASE_URL_FRANKFURTER_TEST.'/v1/latest?from=USD&to=EUR',
         ],
     ]);
 

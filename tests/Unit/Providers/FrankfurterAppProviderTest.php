@@ -95,7 +95,9 @@ describe('Error and Failure Handling', function (): void {
         $baseCurrency = 'USD';
         $targetCurrencies = ['EUR'];
 
-        Log::shouldReceive('error')->once();
+        Log::shouldReceive('error')->once()->andReturnNull();
+        Log::shouldReceive('channel')->andReturnSelf();
+        Log::shouldReceive('warning', 'info', 'debug')->andReturnNull();
 
         Http::fake([
             '*' => $fakeResponseFactory(),
@@ -127,7 +129,10 @@ describe('Error and Failure Handling', function (): void {
         Log::shouldReceive('error')
             ->once()
             ->withArgs(fn ($message, $context): bool => str_contains($message, 'Exception while fetching rates') &&
-                isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'));
+                isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'))
+            ->andReturnNull();
+        Log::shouldReceive('channel')->andReturnSelf();
+        Log::shouldReceive('warning', 'info', 'debug')->andReturnNull();
 
         Http::shouldReceive('timeout->get')->once()->andThrow(new ConnectionException('Simulated connection timeout'));
 

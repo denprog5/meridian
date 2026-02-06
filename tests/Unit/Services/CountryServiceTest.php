@@ -300,7 +300,10 @@ it('set logs warning and does not put in session for non-existent country code',
     Log::shouldReceive('warning')
         ->once()
         ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Attempt to set user country to non-existent or disabled country.') &&
-               isset($context['code']) && $context['code'] === $nonExistentCode);
+               isset($context['code']) && $context['code'] === $nonExistentCode)
+        ->andReturnNull();
+    Log::shouldReceive('channel')->andReturnSelf();
+    Log::shouldReceive('error', 'info', 'debug')->andReturnNull();
 
     $service = app(CountryServiceContract::class);
 

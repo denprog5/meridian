@@ -297,11 +297,14 @@ it('set puts valid country iso in session and updates property', function (): vo
 it('set logs warning and does not put in session for non-existent country code', function (): void {
     $nonExistentCode = 'XX';
 
+    // Specific expectation for our warning
     Log::shouldReceive('warning')
         ->once()
         ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Attempt to set user country to non-existent or disabled country.') &&
                isset($context['code']) && $context['code'] === $nonExistentCode)
         ->andReturnNull();
+    // Allow any other warning calls (e.g., from Symfony deprecations)
+    Log::shouldReceive('warning')->andReturnNull();
     Log::shouldReceive('channel')->andReturnSelf();
     Log::shouldReceive('error', 'info', 'debug')->andReturnNull();
 

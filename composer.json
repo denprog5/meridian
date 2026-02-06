@@ -66,7 +66,15 @@
         "laravel": {
             "providers": [
                 "Denprog\\Meridian\\MeridianServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "MeridianCountry": "Denprog\\Meridian\\Facades\\MeridianCountry",
+                "MeridianCurrency": "Denprog\\Meridian\\Facades\\MeridianCurrency",
+                "MeridianLanguage": "Denprog\\Meridian\\Facades\\MeridianLanguage",
+                "MeridianGeoLocator": "Denprog\\Meridian\\Facades\\MeridianGeoLocator",
+                "MeridianExchangeRate": "Denprog\\Meridian\\Facades\\MeridianExchangeRate",
+                "MeridianUpdateExchangeRate": "Denprog\\Meridian\\Facades\\MeridianUpdateExchangeRate"
+            }
         }
     }
 }

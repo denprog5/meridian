@@ -4,15 +4,34 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Exceptions;
 
-use Exception;
+use Throwable;
 
 /**
- * Class ConfigurationException
- *
- * Thrown when there is a misconfiguration or missing configuration
- * preventing a service or component from operating correctly.
+ * Exception thrown when there is a misconfiguration or missing configuration.
  */
-class ConfigurationException extends Exception
+class ConfigurationException extends MeridianException
 {
-    // You can add custom properties or methods if needed in the future.
+    /**
+     * Create a new configuration exception.
+     */
+    public function __construct(
+        string $message,
+        public readonly ?string $configKey = null,
+        int $code = 0,
+        ?Throwable $previous = null
+    ) {
+        parent::__construct($message, $code, $previous);
+    }
+
+    /**
+     * Get the exception context for logging.
+     *
+     * @return array<string, mixed>
+     */
+    public function context(): array
+    {
+        return array_filter([
+            'config_key' => $this->configKey,
+        ]);
+    }
 }

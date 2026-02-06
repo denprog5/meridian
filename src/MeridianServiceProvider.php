@@ -7,6 +7,7 @@ namespace Denprog\Meridian;
 use Denprog\Meridian\Commands\InstallCommand;
 use Denprog\Meridian\Commands\InstallDataCommand;
 use Denprog\Meridian\Commands\UpdateExchangeRatesCommand;
+use Denprog\Meridian\Commands\UpdateGeoipDbCommand;
 use Denprog\Meridian\Contracts\CountryServiceContract;
 use Denprog\Meridian\Contracts\CurrencyConverterContract;
 use Denprog\Meridian\Contracts\CurrencyServiceContract;
@@ -23,102 +24,113 @@ use Denprog\Meridian\Services\Drivers\GeoIP\MaxMindDatabaseDriver;
 use Denprog\Meridian\Services\GeoLocationService;
 use Denprog\Meridian\Services\LanguageService;
 use Denprog\Meridian\Services\UpdateExchangeRateService;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
+/**
+ * Service provider for the Meridian package.
+ *
+ * Registers all package services, configurations, commands, and publishable assets.
+ */
 class MeridianServiceProvider extends BaseServiceProvider
 {
     /**
-     * Package base path for brevity.
-     */
-    protected string $basePath;
-
-    /**
-     * Create a new service provider instance.
+     * All console commands provided by the package.
      *
-     * @return void
+     * @var array<int, class-string>
      */
-    public function __construct(Application $app)
-    {
-        parent::__construct($app);
-        $this->basePath = __DIR__.'/..';
-    }
+    protected array $commands = [
+        InstallCommand::class,
+        InstallDataCommand::class,
+        UpdateExchangeRatesCommand::class,
+        UpdateGeoipDbCommand::class,
+    ];
 
     /**
      * Register any application services.
      *
      * This method is used to bind any services or configurations into the service container.
-     * It should not be used to register event listeners, routes, or any other piece of functionality
-     * that relies on other services already being registered.
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(
-            $this->basePath.'/config/meridian.php',
-            'meridian'
-        );
+        $this->mergeConfigFrom($this->configPath(), 'meridian');
 
-        $this->app->singleton(ExchangeRateProviderContract::class, FrankfurterAppProvider::class);
-
-        // Bind services to the container
-        $this->app->singleton(CountryServiceContract::class, CountryService::class);
-        $this->app->singleton(CurrencyServiceContract::class, CurrencyService::class);
-        $this->app->singleton(LanguageServiceContract::class, LanguageService::class);
-        $this->app->singleton(CurrencyConverterContract::class, CurrencyConverterService::class);
-        $this->app->singleton(UpdateExchangeRateContract::class, UpdateExchangeRateService::class);
-
-        // GeoLocation Services
-        $this->app->singleton(GeoIpDriverContract::class, MaxMindDatabaseDriver::class);
-        $this->app->singleton(GeoLocationServiceContract::class, GeoLocationService::class);
+        $this->registerCoreServices();
+        $this->registerGeoLocationServices();
     }
 
     /**
      * Bootstrap any application services.
      *
-     * This method is called after all other service providers have been registered,
-     * meaning you have access to all other services that have been registered by the framework.
-     * It is used for tasks like loading migrations, translations, publishing assets,
-     * registering view composers, routes, or event listeners.
+     * This method is called after all other service providers have been registered.
      */
     public function boot(): void
     {
-        $this->basePath = dirname(__DIR__);
+        $this->loadTranslationsFrom($this->basePath('lang'), 'meridian');
 
         if ($this->app->runningInConsole()) {
-            // Publish configuration
-            $this->publishes([
-                $this->basePath.'/config/meridian.php' => config_path('meridian.php'),
-            ], 'meridian-config');
-
-            // Publish migrations
-            $this->publishes([
-                $this->basePath.'/database/migrations' => database_path('migrations'),
-            ], 'meridian-migrations');
-
-            // Optionally, publish language files
-            $this->publishes([
-                $this->basePath.'/lang' => lang_path('vendor/meridian'),
-            ], 'meridian-lang');
+            $this->registerPublishables();
+            $this->commands($this->commands);
         }
-
-        // Load translations if they exist
-        $this->loadTranslationsFrom($this->basePath.'/lang', 'meridian');
-
-        $this->registerCommands();
     }
 
     /**
-     * Register commands for the package.
+     * Get the base path for the package.
      */
-    protected function registerCommands(): void
+    private function basePath(string $path = ''): string
     {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                InstallCommand::class,
-                UpdateExchangeRatesCommand::class,
-                Commands\UpdateGeoipDbCommand::class,
-                InstallDataCommand::class,
-            ]);
-        }
+        $base = dirname(__DIR__);
+
+        return $path !== '' ? $base.'/'.$path : $base;
+    }
+
+    /**
+     * Get the path to the package configuration file.
+     */
+    private function configPath(): string
+    {
+        return $this->basePath('config/meridian.php');
+    }
+
+    /**
+     * Register core package services.
+     */
+    private function registerCoreServices(): void
+    {
+        $this->app->singleton(ExchangeRateProviderContract::class, FrankfurterAppProvider::class);
+        $this->app->singleton(CountryServiceContract::class, CountryService::class);
+        $this->app->singleton(CurrencyServiceContract::class, CurrencyService::class);
+        $this->app->singleton(LanguageServiceContract::class, LanguageService::class);
+        $this->app->singleton(CurrencyConverterContract::class, CurrencyConverterService::class);
+        $this->app->singleton(UpdateExchangeRateContract::class, UpdateExchangeRateService::class);
+    }
+
+    /**
+     * Register GeoLocation-related services.
+     */
+    private function registerGeoLocationServices(): void
+    {
+        $this->app->singleton(GeoIpDriverContract::class, MaxMindDatabaseDriver::class);
+        $this->app->singleton(GeoLocationServiceContract::class, GeoLocationService::class);
+    }
+
+    /**
+     * Register publishable assets for the package.
+     */
+    private function registerPublishables(): void
+    {
+        // Configuration - tagged with both specific and group tags
+        $this->publishes([
+            $this->configPath() => config_path('meridian.php'),
+        ], ['meridian', 'meridian-config']);
+
+        // Migrations - using Laravel 12's publishesMigrations for proper timestamp handling
+        $this->publishesMigrations([
+            $this->basePath('database/migrations') => database_path('migrations'),
+        ], ['meridian', 'meridian-migrations']);
+
+        // Language files
+        $this->publishes([
+            $this->basePath('lang') => lang_path('vendor/meridian'),
+        ], ['meridian', 'meridian-lang']);
     }
 }

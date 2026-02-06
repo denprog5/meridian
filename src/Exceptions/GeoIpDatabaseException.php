@@ -4,14 +4,34 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Exceptions;
 
-use Exception;
+use Throwable;
 
 /**
- * Class GeoIpDatabaseException
- *
- * Thrown when there is an issue with the GeoIP database itself (e.g., not found, corrupted, unreadable).
+ * Exception thrown when the GeoIP database is invalid, missing, or corrupted.
  */
-class GeoIpDatabaseException extends Exception
+class GeoIpDatabaseException extends MeridianException
 {
-    // You can add custom properties or methods if needed in the future.
+    /**
+     * Create a new GeoIP database exception.
+     */
+    public function __construct(
+        string $message,
+        public readonly ?string $databasePath = null,
+        int $code = 0,
+        ?Throwable $previous = null
+    ) {
+        parent::__construct($message, $code, $previous);
+    }
+
+    /**
+     * Get the exception context for logging.
+     *
+     * @return array<string, mixed>
+     */
+    public function context(): array
+    {
+        return array_filter([
+            'database_path' => $this->databasePath,
+        ]);
+    }
 }

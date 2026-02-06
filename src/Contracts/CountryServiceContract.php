@@ -236,4 +236,15 @@ interface CountryServiceContract
      * @return Country|null The Country model if found, otherwise null.
      */
     public function findById(int $id, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country;
+
+    /**
+     * Find a country by its code (alias for findByIsoAlpha2Code).
+     * Results can be optionally retrieved from cache.
+     *
+     * @param  string  $code  The country code (ISO 3166-1 Alpha-2).
+     * @param  bool  $useCache  Whether to use cache. Defaults to true.
+     * @param  int  $cacheTtlMinutes  Cache Time-To-Live in minutes. Defaults to 60.
+     * @return Country|null The Country model if found, otherwise null.
+     */
+    public function findByCode(string $code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country;
 }

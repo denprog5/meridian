@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Exceptions;
 
+use Exception;
 use Throwable;
 
 /**
- * Exception thrown when a GeoIP lookup fails.
+ * Base exception for all Meridian package exceptions.
+ *
+ * Provides a common interface and context method for structured logging.
  */
-class GeoIpLookupException extends MeridianException
+abstract class MeridianException extends Exception
 {
     /**
-     * Create a new GeoIP lookup exception.
+     * Create a new exception instance.
      */
     public function __construct(
-        string $message,
-        public readonly ?string $ipAddress = null,
+        string $message = '',
         int $code = 0,
         ?Throwable $previous = null
     ) {
@@ -24,14 +26,12 @@ class GeoIpLookupException extends MeridianException
     }
 
     /**
-     * Get the exception context for logging.
+     * Get the exception context for structured logging.
      *
      * @return array<string, mixed>
      */
     public function context(): array
     {
-        return array_filter([
-            'ip_address' => $this->ipAddress,
-        ]);
+        return [];
     }
 }

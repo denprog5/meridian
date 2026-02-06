@@ -6,8 +6,12 @@ namespace Denprog\Meridian\Commands;
 
 use Denprog\Meridian\Contracts\UpdateExchangeRateContract;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 
+/**
+ * Command to fetch and store exchange rates from the configured provider.
+ */
 class UpdateExchangeRatesCommand extends Command
 {
     /**
@@ -15,14 +19,17 @@ class UpdateExchangeRatesCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'meridian:update-exchange-rates';
+    protected $signature = 'meridian:update-exchange-rates
+        {--base= : Base currency code (defaults to config value)}
+        {--targets=* : Target currency codes (defaults to config value)}
+        {--date= : Specific date in YYYY-MM-DD format (defaults to today)}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Fetches and stores the latest exchange rates from the configured provider.';
+    protected $description = 'Fetches and stores exchange rates from the configured provider.';
 
     /**
      * Create a new command instance.
@@ -37,20 +44,40 @@ class UpdateExchangeRatesCommand extends Command
      */
     public function handle(): int
     {
+        $baseCurrency = $this->option('base');
+        $targets = $this->option('targets');
+        $dateString = $this->option('date');
+        $date = is_string($dateString) && $dateString !== '' ? Carbon::parse($dateString) : null;
+
         $this->info('Attempting to fetch and store exchange rates...');
 
-        $success = $this->updateExchangeRateService->updateRates();
+        if (is_string($baseCurrency) && $baseCurrency !== '') {
+            $this->line("  Base currency: $baseCurrency");
+        }
+
+        /** @var non-empty-array<int, string>|null $targetsArray */
+        $targetsArray = is_array($targets) && $targets !== [] ? $targets : null;
+        if ($targetsArray !== null) {
+            $this->line('  Target currencies: '.implode(', ', $targetsArray));
+        }
+        if ($date !== null) {
+            $this->line("  Date: {$date->toDateString()}");
+        }
+
+        $success = $this->updateExchangeRateService->updateRates(
+            is_string($baseCurrency) && $baseCurrency !== '' ? $baseCurrency : null,
+            $targetsArray,
+            $date
+        );
 
         if ($success) {
             $this->info('Exchange rates updated successfully.');
-        } else {
-            $this->error('Failed to update exchange rates or no rates needed updating.');
 
-            // Consider if this should always be a FAILURE. If no rates were found for today but provider was reached, is it a failure?
-            // For now, let's assume any non-true result means something didn't go as fully expected.
-            return CommandAlias::FAILURE;
+            return CommandAlias::SUCCESS;
         }
 
-        return CommandAlias::SUCCESS;
+        $this->error('Failed to update exchange rates or no rates needed updating.');
+
+        return CommandAlias::FAILURE;
     }
 }

@@ -12,6 +12,9 @@ use JsonSerializable;
 /**
  * Represents geolocation data for an IP address.
  *
+ * This is an immutable data transfer object that holds geographic information
+ * resolved from an IP address lookup.
+ *
  * @implements Arrayable<string, mixed>
  */
 final readonly class LocationData implements Arrayable, Jsonable, JsonSerializable
@@ -79,6 +82,8 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
     }
 
     /**
+     * Create a LocationData instance from an array.
+     *
      * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
@@ -93,9 +98,24 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
             longitude: (isset($data['longitude']) && is_numeric($data['longitude'])) ? (float) $data['longitude'] : null,
             timezone: (isset($data['timezone']) && is_scalar($data['timezone'])) ? (string) $data['timezone'] : null,
             accuracyRadius: (isset($data['accuracyRadius']) && is_numeric($data['accuracyRadius'])) ? (int) $data['accuracyRadius'] : null,
-            isInEuropeanUnion: filter_var($data['isInEuropeanUnion'] ?? false, FILTER_VALIDATE_BOOLEAN), // filter_var($val, FILTER_VALIDATE_BOOLEAN) вернет true/false
-            raw: (isset($data['raw']) && is_array($data['raw'])) ? $data['raw'] : null // ИСПРАВЛЕНО ЗДЕСЬ
+            isInEuropeanUnion: filter_var($data['isInEuropeanUnion'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            raw: (isset($data['raw']) && is_array($data['raw'])) ? $data['raw'] : null
         );
+    }
+
+    /**
+     * Create a LocationData instance from session data with validation.
+     *
+     * @param  mixed  $data  The data from session.
+     */
+    public static function fromSession(mixed $data): ?self
+    {
+        if (! is_array($data) || ! isset($data['ipAddress'])) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $data */
+        return self::fromArray($data);
     }
 
     /**
@@ -111,8 +131,47 @@ final readonly class LocationData implements Arrayable, Jsonable, JsonSerializab
                $this->longitude === null &&
                $this->timezone === null &&
                $this->accuracyRadius === null &&
-               $this->isInEuropeanUnion === false && // Default for empty
+               $this->isInEuropeanUnion === false &&
                $this->raw === null;
+    }
+
+    /**
+     * Check if the location has valid coordinates.
+     */
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
+    }
+
+    /**
+     * Check if the location has a country.
+     */
+    public function hasCountry(): bool
+    {
+        return $this->countryCode !== null;
+    }
+
+    /**
+     * Check if the location has a city.
+     */
+    public function hasCity(): bool
+    {
+        return $this->cityName !== null;
+    }
+
+    /**
+     * Get a formatted location string.
+     *
+     * @param  string  $separator  The separator between location parts.
+     */
+    public function toFormattedString(string $separator = ', '): string
+    {
+        $parts = array_filter([
+            $this->cityName,
+            $this->countryName,
+        ]);
+
+        return implode($separator, $parts) ?: 'Unknown location';
     }
 
     /**

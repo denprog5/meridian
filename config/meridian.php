@@ -16,7 +16,7 @@ return [
     | Example: 'USD', 'EUR', 'GBP'.
     |
     */
-    'base_currency_code' => 'USD',
+    'base_currency_code' => env('MERIDIAN_BASE_CURRENCY_CODE', 'USD'),
 
     /*
     |--------------------------------------------------------------------------
@@ -30,44 +30,38 @@ return [
     'default_language_code' => env('MERIDIAN_DEFAULT_LANGUAGE_CODE', 'en'),
 
     /*
+    |--------------------------------------------------------------------------
+    | Active Languages
+    |--------------------------------------------------------------------------
     |
-    | active_languages: An array of language codes that are currently active in the application.
-    |   Only these languages will be available for selection or displayed in the interface.
-    |   If empty, all languages will be available.
-    |   Example: ['en', 'ru']
+    | An array of language codes that are currently active in the application.
+    | Only these languages will be available for selection or displayed in the interface.
+    | If empty, all languages will be available.
+    | Example: ['en', 'ru']
     |
     */
     'active_languages' => [],
-
-    /*
-    |
-    | active_currencies: An array of currency codes that are currently active in the application.
-    |   Only these currencies will be available for selection or displayed in the interface.
-    |   If empty, all currencies will be available.
-    |   Example: ['USD', 'EUR']
-    |
-    */
-
-    /*
-    'active_currencies' => [
-        'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR',  'GBP', 'HKD',
-        'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK',
-        'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR',
-    ],
-    */
 
     /*
     |--------------------------------------------------------------------------
     | Target Currency Codes For Exchange Rates
     |--------------------------------------------------------------------------
     |
-    | target_currency_codes: An array of currency codes that are available for
-    | updating exchange rates.
-    | Example: ['USD', 'EUR']
+    | An array of currency codes that are available for updating exchange rates.
+    | If empty, all available currencies from the provider will be updated.
+    | Example: ['EUR', 'GBP', 'JPY']
     |
     */
     'target_currency_codes' => [],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default Country ISO Code
+    |--------------------------------------------------------------------------
+    |
+    | The default country ISO 3166-1 alpha-2 code.
+    |
+    */
     'default_country_iso_code' => env('MERIDIAN_DEFAULT_COUNTRY_ISO_CODE', 'US'),
 
     /*
@@ -80,14 +74,14 @@ return [
     |
     */
     'geolocation' => [
-        'default_driver' => 'maxmind_database', // or 'ip_api_com', 'ipstack', etc.
+        'default_driver' => env('MERIDIAN_GEOIP_DRIVER', 'maxmind_database'),
 
         'drivers' => [
             'maxmind_database' => [
                 'license_key' => env('MAXMIND_LICENSE_KEY'),
                 'account_id' => env('MAXMIND_ACCOUNT_ID'),
-                'database_path' => 'meridian',
-                'database_filename' => 'GeoLite2-City.mmdb',
+                'database_path' => env('MERIDIAN_GEOIP_DATABASE_PATH', 'meridian'),
+                'database_filename' => env('MERIDIAN_GEOIP_DATABASE_FILENAME', 'GeoLite2-City.mmdb'),
                 'editions' => [
                     env('MAXMIND_EDITION', 'GeoLite2-City'),
                 ],
@@ -104,7 +98,6 @@ return [
         |
         */
         'session' => [
-            // The session key under which the LocationData will be stored.
             'key' => env('MERIDIAN_GEOLOCATION_SESSION_KEY', 'meridian_location'),
         ],
     ],
@@ -129,45 +122,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Exchange Rate Providers Configuration
+    | HTTP Timeout
     |--------------------------------------------------------------------------
     |
-    | Configure the API endpoints and any other settings for exchange rate
-    | providers. The 'frankfurter' key is used by default.
+    | The default timeout in seconds for HTTP requests to external APIs.
     |
     */
-    'exchange_rate_providers' => [
-        'frankfurter' => [
-            'api_url' => env('FRANKFURTER_API_URL', 'https://api.frankfurter.dev/v1'),
-        ],
-    ],
+    'http_timeout' => env('MERIDIAN_HTTP_TIMEOUT', 10),
 
     /*
     |--------------------------------------------------------------------------
-    | Exchange Rate Providers
+    | Exchange Rate Provider Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure the services used for fetching currency exchange rates.
-    | Specify the default provider and any necessary API keys or settings.
+    | Configure the API endpoints and settings for exchange rate providers.
     |
     */
     'exchange_rates' => [
-        'default_provider' => 'frankfurter_app', // Example: 'frankfurter_app', 'european_central_bank'
+        'default_provider' => env('MERIDIAN_EXCHANGE_RATE_PROVIDER', 'frankfurter'),
 
         'providers' => [
-            'frankfurter_app' => [
-                'base_url' => 'https://api.frankfurter.app',
-                // No API key needed for frankfurter.app
-            ],
-
-            'european_central_bank' => [
-                // URL for ECB's daily XML feed
-                'url' => 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',
+            'frankfurter' => [
+                'api_url' => env('FRANKFURTER_API_URL', 'https://api.frankfurter.dev/v1'),
             ],
         ],
 
-        // Define how many past days of exchange rates to fetch and store if the provider supports it.
-        // This is relevant for the `meridian:update-exchange-rates` command.
-        'historical_days' => 90, // Fetch rates for the last 90 days
+        // Number of past days of exchange rates to fetch if the provider supports it.
+        'historical_days' => 90,
     ],
 ];

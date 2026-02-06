@@ -4,14 +4,34 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Exceptions;
 
-use Exception;
+use Throwable;
 
 /**
- * Class InvalidIpAddressException
- *
- * Thrown when an IP address is invalid or malformed.
+ * Exception thrown when an invalid IP address is provided.
  */
-class InvalidIpAddressException extends Exception
+class InvalidIpAddressException extends MeridianException
 {
-    // You can add custom properties or methods if needed in the future.
+    /**
+     * Create a new invalid IP address exception.
+     */
+    public function __construct(
+        string $message,
+        public readonly ?string $ipAddress = null,
+        int $code = 0,
+        ?Throwable $previous = null
+    ) {
+        parent::__construct($message, $code, $previous);
+    }
+
+    /**
+     * Get the exception context for logging.
+     *
+     * @return array<string, mixed>
+     */
+    public function context(): array
+    {
+        return array_filter([
+            'ip_address' => $this->ipAddress,
+        ]);
+    }
 }

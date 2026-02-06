@@ -350,4 +350,16 @@ final class CountryService implements CountryServiceContract
 
         return Country::query()->find($id);
     }
+
+    /**
+     * Find a country by its code (alias for findByIsoAlpha2Code).
+     *
+     * @param  string  $code  The country code (ISO 3166-1 Alpha-2).
+     * @param  bool  $useCache  Whether to use cache.
+     * @param  int  $cacheTtlMinutes  Cache TTL in minutes.
+     */
+    public function findByCode(string $code, bool $useCache = true, int $cacheTtlMinutes = 60): ?Country
+    {
+        return $this->findByIsoAlpha2Code($code, $useCache, $cacheTtlMinutes);
+    }
 }

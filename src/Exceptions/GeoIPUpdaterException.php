@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian\Exceptions;
 
-use Exception;
-
 /**
- * Class InvalidIpAddressException
- *
- * Thrown when an IP address is invalid or malformed.
+ * Exception thrown when updating the GeoIP database fails.
  */
-class GeoIPUpdaterException extends Exception
+class GeoIPUpdaterException extends MeridianException
 {
-    // You can add custom properties or methods if needed in the future.
+    /**
+     * Get the exception context for logging.
+     *
+     * @return array<string, mixed>
+     */
+    public function context(): array
+    {
+        return [];
+    }
 }

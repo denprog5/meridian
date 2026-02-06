@@ -13,6 +13,7 @@ use Denprog\Meridian\Exceptions\InvalidIpAddressException;
 use Denprog\Meridian\Models\Country;
 use Denprog\Meridian\Models\Currency;
 use Denprog\Meridian\Models\Language;
+use Illuminate\Support\Facades\Log;
 
 if (! function_exists('currency')) {
     /**

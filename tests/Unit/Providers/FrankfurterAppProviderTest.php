@@ -99,12 +99,14 @@ describe('Error and Failure Handling', function (): void {
             '*' => $fakeResponseFactory(),
         ]);
 
-        Log::shouldReceive('error')->once();
+        Log::spy();
 
         $provider = new FrankfurterAppProvider();
         $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
         expect($rates)->toBeNull();
+
+        Log::shouldHaveReceived('error')->once();
     })->with([
         'API request failure (500)' => [
             fn () => Http::response(null, 500),
@@ -126,13 +128,16 @@ describe('Error and Failure Handling', function (): void {
 
         Http::shouldReceive('timeout->get')->once()->andThrow(new ConnectionException('Simulated connection timeout'));
 
-        Log::shouldReceive('error')->once()
-            ->withArgs(fn ($message, $context): bool => str_contains($message, 'Exception while fetching rates') &&
-                isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'));
+        Log::spy();
 
         $provider = new FrankfurterAppProvider();
         $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
         expect($rates)->toBeNull();
+
+        Log::shouldHaveReceived('error')
+            ->withArgs(fn ($message, $context): bool => str_contains($message, 'Exception while fetching rates') &&
+                isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'))
+            ->once();
     });
 });

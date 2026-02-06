@@ -91,6 +91,10 @@ describe('Successful Rate Fetching', function (): void {
 });
 
 describe('Error and Failure Handling', function (): void {
+    beforeEach(function (): void {
+        Log::spy();
+    });
+
     test('getRates returns null and logs error for various API issues', function (callable $fakeResponseFactory): void {
         $baseCurrency = 'USD';
         $targetCurrencies = ['EUR'];
@@ -98,8 +102,6 @@ describe('Error and Failure Handling', function (): void {
         Http::fake([
             '*' => $fakeResponseFactory(),
         ]);
-
-        Log::spy();
 
         $provider = new FrankfurterAppProvider();
         $rates = $provider->getRates($baseCurrency, $targetCurrencies);
@@ -127,8 +129,6 @@ describe('Error and Failure Handling', function (): void {
         $targetCurrencies = ['EUR'];
 
         Http::shouldReceive('timeout->get')->once()->andThrow(new ConnectionException('Simulated connection timeout'));
-
-        Log::spy();
 
         $provider = new FrankfurterAppProvider();
         $rates = $provider->getRates($baseCurrency, $targetCurrencies);

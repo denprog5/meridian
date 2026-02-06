@@ -19,7 +19,6 @@ use Mockery;
 
 beforeEach(function (): void {
     Session::spy();
-    Log::spy();
 
     Config::set('meridian.default_country_iso_code', 'US');
 });
@@ -296,6 +295,8 @@ it('set puts valid country iso in session and updates property', function (): vo
 });
 
 it('set logs warning and does not put in session for non-existent country code', function (): void {
+    Log::spy();
+
     $nonExistentCode = 'XX';
     $service = app(CountryServiceContract::class);
 

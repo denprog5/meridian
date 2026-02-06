@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('language_code', 2);
             $table->string('status')->nullable()->index();
 
-            $table->foreign('country_code')->references('iso_alpha_2')->on('countries')->onDelete('cascade');
-            $table->foreign('language_code')->references('code')->on('languages')->onDelete('cascade');
+            $table->foreign('country_code')->references('iso_alpha_2')->on('countries')->cascadeOnDelete();
+            $table->foreign('language_code')->references('code')->on('languages')->cascadeOnDelete();
 
             $table->primary(['country_code', 'language_code']);
         });

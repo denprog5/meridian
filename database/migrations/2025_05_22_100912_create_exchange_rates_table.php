@@ -26,8 +26,8 @@ return new class extends Migration
             $table->index('rate_date');
             $table->unique(['base_currency_code', 'target_currency_code', 'rate_date'], 'exchange_rates_unique_rate_for_date');
 
-            $table->foreign('base_currency_code')->references('code')->on('currencies')->onDelete('cascade');
-            $table->foreign('target_currency_code')->references('code')->on('currencies')->onDelete('cascade');
+            $table->foreign('base_currency_code')->references('code')->on('currencies')->cascadeOnDelete();
+            $table->foreign('target_currency_code')->references('code')->on('currencies')->cascadeOnDelete();
         });
     }
 

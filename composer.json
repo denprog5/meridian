@@ -1,28 +1,48 @@
 {
     "name": "denprog/meridian",
     "description": "Simplify internationalization in your Laravel projects with Meridian. Easily manage countries, currencies, exchange rates, languages, and perform GeoIP lookups.",
-    "keywords": ["php", "laravel", "package", "meridian", "meridian-laravel", "countries", "currencies", "exchange-rates", "languages", "geoip"],
+    "keywords": [
+        "php",
+        "laravel",
+        "package",
+        "meridian",
+        "countries",
+        "currencies",
+        "exchange-rates",
+        "languages",
+        "geoip",
+        "internationalization",
+        "i18n",
+        "localization"
+    ],
     "license": "MIT",
+    "type": "library",
+    "homepage": "https://github.com/denprog5/meridian",
     "authors": [
         {
             "name": "Denis Liakhar",
-            "email": "denisprogressive@gmail.com"
+            "email": "denisprogressive@gmail.com",
+            "role": "Developer"
         }
     ],
+    "support": {
+        "issues": "https://github.com/denprog5/meridian/issues",
+        "source": "https://github.com/denprog5/meridian"
+    },
     "require": {
-        "php": "^8.3.0",
+        "php": "^8.3",
         "ext-intl": "*",
-        "geoip2/geoip2": "^3.2",
-        "laravel/framework": "^11.45|^12.0"
+        "geoip2/geoip2": "^3.0",
+        "laravel/framework": "^11.0 || ^12.0"
     },
     "require-dev": {
-        "laravel/pint": "^1.22.1",
-        "orchestra/testbench": "^10.0",
-        "pestphp/pest": "^4.0.0",
-        "pestphp/pest-plugin-type-coverage": "^4.0.0",
-        "larastan/larastan": "^3.4",
-        "rector/rector": "^2.0.16",
-        "symfony/var-dumper": "^7.2.6"
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0 || ^10.0",
+        "pestphp/pest": "^3.0 || ^4.0",
+        "pestphp/pest-plugin-type-coverage": "^3.0 || ^4.0",
+        "rector/rector": "^2.0",
+        "symfony/var-dumper": "^7.0 || ^8.0"
     },
     "autoload": {
         "psr-4": {
@@ -39,27 +59,28 @@
             "Tests\\": "tests/"
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true,
     "config": {
         "sort-packages": true,
         "preferred-install": "dist",
+        "optimize-autoloader": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }
     },
     "scripts": {
-        "refactor": "rector",
         "lint": "pint",
-        "test:refactor": "rector --dry-run",
-        "test:lint": "pint --test",
-        "test:types": "phpstan analyse --ansi",
-        "test:unit": "pest --colors=always --coverage --min=60",
-        "test": [
-            "@test:refactor",
-            "@test:lint",
-            "@test:types",
-            "@test:unit"
+        "lint:check": "pint --test",
+        "analyse": "phpstan analyse --ansi",
+        "test": "pest --colors=always",
+        "test:coverage": "pest --colors=always --coverage --min=60",
+        "refactor": "rector",
+        "refactor:check": "rector --dry-run",
+        "check": [
+            "@lint:check",
+            "@analyse",
+            "@test"
         ]
     },
     "extra": {

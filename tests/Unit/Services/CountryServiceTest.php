@@ -295,17 +295,16 @@ it('set puts valid country iso in session and updates property', function (): vo
 });
 
 it('set logs warning and does not put in session for non-existent country code', function (): void {
-    Log::spy();
-
     $nonExistentCode = 'XX';
+
+    Log::shouldReceive('warning')
+        ->once()
+        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Attempt to set user country to non-existent or disabled country.') &&
+               isset($context['code']) && $context['code'] === $nonExistentCode);
+
     $service = app(CountryServiceContract::class);
 
     $service->set($nonExistentCode);
-
-    Log::shouldHaveReceived('warning')
-        ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, 'Attempt to set user country to non-existent or disabled country.') &&
-               isset($context['code']) && $context['code'] === $nonExistentCode)
-        ->once();
 
     Session::shouldNotHaveReceived('put');
 });

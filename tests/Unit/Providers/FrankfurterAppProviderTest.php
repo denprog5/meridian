@@ -91,13 +91,11 @@ describe('Successful Rate Fetching', function (): void {
 });
 
 describe('Error and Failure Handling', function (): void {
-    beforeEach(function (): void {
-        Log::spy();
-    });
-
     test('getRates returns null and logs error for various API issues', function (callable $fakeResponseFactory): void {
         $baseCurrency = 'USD';
         $targetCurrencies = ['EUR'];
+
+        Log::shouldReceive('error')->once();
 
         Http::fake([
             '*' => $fakeResponseFactory(),
@@ -107,8 +105,6 @@ describe('Error and Failure Handling', function (): void {
         $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
         expect($rates)->toBeNull();
-
-        Log::shouldHaveReceived('error')->once();
     })->with([
         'API request failure (500)' => [
             fn () => Http::response(null, 500),
@@ -128,16 +124,16 @@ describe('Error and Failure Handling', function (): void {
         $baseCurrency = 'USD';
         $targetCurrencies = ['EUR'];
 
+        Log::shouldReceive('error')
+            ->once()
+            ->withArgs(fn ($message, $context): bool => str_contains($message, 'Exception while fetching rates') &&
+                isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'));
+
         Http::shouldReceive('timeout->get')->once()->andThrow(new ConnectionException('Simulated connection timeout'));
 
         $provider = new FrankfurterAppProvider();
         $rates = $provider->getRates($baseCurrency, $targetCurrencies);
 
         expect($rates)->toBeNull();
-
-        Log::shouldHaveReceived('error')
-            ->withArgs(fn ($message, $context): bool => str_contains($message, 'Exception while fetching rates') &&
-                isset($context['exception']) && str_contains((string) $context['exception'], 'Simulated connection timeout'))
-            ->once();
     });
 });

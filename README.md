@@ -69,6 +69,33 @@ use Illuminate\Console\Scheduling\Schedule;
 })
 ```
 
+### Artisan Commands
+
+Meridian provides several Artisan commands to manage your data:
+
+```bash
+# Install the package (publish config, migrations, run migrations)
+php artisan meridian:install
+
+# Seed the database with countries, currencies, and languages
+php artisan meridian:install-data
+
+# Update GeoIP database
+php artisan meridian:update-geoip-db
+
+# Update exchange rates (with optional parameters)
+php artisan meridian:update-exchange-rates
+php artisan meridian:update-exchange-rates --base=EUR
+php artisan meridian:update-exchange-rates --targets=GBP --targets=JPY
+php artisan meridian:update-exchange-rates --date=2025-01-15
+php artisan meridian:update-exchange-rates --base=USD --targets=EUR --date=2025-01-15
+```
+
+**Exchange Rate Command Options:**
+- `--base` - Specify the base currency code (default: from config)
+- `--targets` - Specify target currencies (can be used multiple times)
+- `--date` - Fetch rates for a specific date (format: YYYY-MM-DD)
+
 ## Usage
 
 Meridian provides a simple and elegant API through its facades and a global helper function.

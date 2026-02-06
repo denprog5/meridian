@@ -6,14 +6,11 @@ namespace Tests;
 
 use Denprog\Meridian\MeridianServiceProvider;
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\ServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
 class TestCase extends OrchestraTestCase
 {
-    use RefreshDatabase;
-
     /**
      * Get package providers.
      *
@@ -27,9 +24,28 @@ class TestCase extends OrchestraTestCase
         ];
     }
 
-    protected function setUp(): void
+    /**
+     * Define environment setup.
+     *
+     * @param  Application  $app
+     */
+    protected function defineEnvironment($app): void
     {
-        parent::setUp();
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]);
+    }
+
+    /**
+     * Define database migrations.
+     *
+     * This method is called once before running tests to setup database schema.
+     */
+    protected function defineDatabaseMigrations(): void
+    {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
 }

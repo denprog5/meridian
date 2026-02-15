@@ -7,11 +7,15 @@ namespace Denprog\Meridian\Commands;
 use Denprog\Meridian\Contracts\UpdateExchangeRateContract;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use RuntimeException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command as CommandAlias;
+use Throwable;
 
 /**
  * Command to fetch and store exchange rates from the configured provider.
  */
+#[AsCommand(name: 'meridian:update-exchange-rates')]
 class UpdateExchangeRatesCommand extends Command
 {
     /**
@@ -47,7 +51,22 @@ class UpdateExchangeRatesCommand extends Command
         $baseCurrency = $this->option('base');
         $targets = $this->option('targets');
         $dateString = $this->option('date');
-        $date = is_string($dateString) && $dateString !== '' ? Carbon::parse($dateString) : null;
+
+        $date = null;
+        if (is_string($dateString) && $dateString !== '') {
+            try {
+                $parsedDate = Carbon::createFromFormat('Y-m-d', $dateString);
+                if (! $parsedDate instanceof Carbon) {
+                    throw new RuntimeException('Invalid date format.');
+                }
+
+                $date = $parsedDate->startOfDay();
+            } catch (Throwable) {
+                $this->error('Invalid --date option. Use YYYY-MM-DD format.');
+
+                return CommandAlias::FAILURE;
+            }
+        }
 
         $this->info('Attempting to fetch and store exchange rates...');
 

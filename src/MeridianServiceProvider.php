@@ -97,10 +97,10 @@ class MeridianServiceProvider extends BaseServiceProvider
     private function registerCoreServices(): void
     {
         $this->app->singleton(ExchangeRateProviderContract::class, FrankfurterAppProvider::class);
-        $this->app->singleton(CountryServiceContract::class, CountryService::class);
-        $this->app->singleton(CurrencyServiceContract::class, CurrencyService::class);
-        $this->app->singleton(LanguageServiceContract::class, LanguageService::class);
-        $this->app->singleton(CurrencyConverterContract::class, CurrencyConverterService::class);
+        $this->app->scoped(CountryServiceContract::class, CountryService::class);
+        $this->app->scoped(CurrencyServiceContract::class, CurrencyService::class);
+        $this->app->scoped(LanguageServiceContract::class, LanguageService::class);
+        $this->app->scoped(CurrencyConverterContract::class, CurrencyConverterService::class);
         $this->app->singleton(UpdateExchangeRateContract::class, UpdateExchangeRateService::class);
     }
 

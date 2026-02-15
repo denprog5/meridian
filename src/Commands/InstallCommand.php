@@ -7,8 +7,10 @@ namespace Denprog\Meridian\Commands;
 use Denprog\Meridian\MeridianServiceProvider;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command as CommandAlias;
 
+#[AsCommand(name: 'meridian:install')]
 class InstallCommand extends Command
 {
     /**
@@ -16,7 +18,8 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'meridian:install';
+    protected $signature = 'meridian:install
+        {--force : Overwrite existing published files}';
 
     /**
      * The console command description.
@@ -30,6 +33,8 @@ class InstallCommand extends Command
      */
     public function handle(): int
     {
+        $force = (bool) $this->option('force');
+
         $this->info('Publishing Meridian package assets...');
 
         // Publish config
@@ -37,7 +42,7 @@ class InstallCommand extends Command
         Artisan::call('vendor:publish', [
             '--provider' => MeridianServiceProvider::class,
             '--tag' => 'meridian-config',
-            '--force' => true,
+            '--force' => $force,
         ]);
         $this->info('Configuration published.');
 
@@ -46,7 +51,7 @@ class InstallCommand extends Command
         Artisan::call('vendor:publish', [
             '--provider' => MeridianServiceProvider::class,
             '--tag' => 'meridian-migrations',
-            '--force' => true,
+            '--force' => $force,
         ]);
         $this->info('Migrations published.');
 

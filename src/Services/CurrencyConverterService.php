@@ -34,7 +34,6 @@ final class CurrencyConverterService implements CurrencyConverterContract
     public function __construct(
         private readonly CurrencyServiceContract $currencyService,
         private readonly LanguageServiceContract $languageService,
-
     ) {
         $this->setDefaults();
     }
@@ -44,15 +43,16 @@ final class CurrencyConverterService implements CurrencyConverterContract
         $this->currency = $this->currencyService->get();
         $this->baseCurrency = $this->currencyService->baseCurrency();
         $defaultLocale = $this->languageService->detectBrowserLocale();
-        $exchangeRate = ExchangeRate::query()
-            ->where('base_currency_code', $this->baseCurrency->code)
-            ->where('target_currency_code', $this->currency->code)
-            ->latest('rate_date')
-            ->first();
 
         if ($this->currency->code === $this->baseCurrency->code) {
             $this->exchangeRateValue = 1.0;
         } else {
+            $exchangeRate = ExchangeRate::query()
+                ->where('base_currency_code', $this->baseCurrency->code)
+                ->where('target_currency_code', $this->currency->code)
+                ->latest('rate_date')
+                ->first();
+
             $this->exchangeRateValue = $exchangeRate ? (float) ($exchangeRate->rate) : 1.0;
         }
 
@@ -64,7 +64,7 @@ final class CurrencyConverterService implements CurrencyConverterContract
      */
     public function convert(float|int $amount, bool $returnFormatted = false, ?string $locale = null): float|string
     {
-        $convertedAmount = round($amount * $this->exchangeRateValue);
+        $convertedAmount = round($amount * $this->exchangeRateValue, $this->currency->decimal_places);
 
         if ($returnFormatted) {
             return $this->format($convertedAmount, $this->currency->code, $locale);
@@ -78,11 +78,13 @@ final class CurrencyConverterService implements CurrencyConverterContract
      */
     public function convertBetween(float|int $amount, string $toCurrencyCode, ?string $fromCurrencyCode = null, bool $returnFormatted = false, string|Carbon|null $date = null, ?string $locale = null): float|string
     {
-        $exchangeRate = (float) ($this->getRate($toCurrencyCode, $fromCurrencyCode, $date));
-        $convertedAmount = round($amount * $exchangeRate);
+        $normalizedToCurrencyCode = mb_strtoupper($toCurrencyCode);
+        $exchangeRate = (float) ($this->getRate($normalizedToCurrencyCode, $fromCurrencyCode, $date));
+        $decimalPlaces = $this->resolveDecimalPlaces($normalizedToCurrencyCode);
+        $convertedAmount = round($amount * $exchangeRate, $decimalPlaces);
 
         if ($returnFormatted) {
-            return $this->format($convertedAmount, $toCurrencyCode, $locale);
+            return $this->format($convertedAmount, $normalizedToCurrencyCode, $locale);
         }
 
         return $convertedAmount;
@@ -107,12 +109,16 @@ final class CurrencyConverterService implements CurrencyConverterContract
     /**
      * {@inheritdoc}
      */
-    public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float|string
+    public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float
     {
         $defaultRate = 1.0;
+        $targetCurrencyCode = mb_strtoupper($targetCurrencyCode);
+
         if ($baseCurrencyCode === null || $baseCurrencyCode === '' || $baseCurrencyCode === '0') {
             $baseCurrencyCode = $this->baseCurrency->code;
         }
+
+        $baseCurrencyCode = mb_strtoupper($baseCurrencyCode);
 
         if ($targetCurrencyCode === $baseCurrencyCode) {
             return $defaultRate;
@@ -120,6 +126,10 @@ final class CurrencyConverterService implements CurrencyConverterContract
 
         if (is_string($date)) {
             $date = Carbon::parse($date);
+        }
+
+        if ($date instanceof Carbon) {
+            $date = $date->startOfDay();
         }
 
         $dateString = $date instanceof Carbon ? $date->format('Y-m-d') : 'latest';
@@ -134,17 +144,19 @@ final class CurrencyConverterService implements CurrencyConverterContract
             ->where('base_currency_code', $baseCurrencyCode)
             ->where('target_currency_code', $targetCurrencyCode)
             ->when($date, function (Builder $query, Carbon $date): void {
-                $query->where('rate_date', $date);
+                $query->whereDate('rate_date', $date->toDateString());
             })
             ->latest('rate_date')
             ->first();
 
         if ($exchangeRate) {
-            $cacheTtl = config()->integer('meridian.cache.exchange_rates', 1800);
-            Cache::put($cacheKey, $exchangeRate->rate, $cacheTtl);
+            $cacheTtl = config()->integer('meridian.cache_lifetimes.exchange_rates', 1800);
+            $rate = (float) $exchangeRate->rate;
+            Cache::put($cacheKey, $rate, now()->addSeconds($cacheTtl));
 
-            return $exchangeRate->rate;
+            return $rate;
         }
+
         Log::info("[Meridian] No exchange rate found for $baseCurrencyCode to $targetCurrencyCode on $dateString. Returned default rate. Update the exchange rate first.");
 
         return $defaultRate;
@@ -155,38 +167,66 @@ final class CurrencyConverterService implements CurrencyConverterContract
      */
     public function getRates(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): ?array
     {
+        $targetCurrencyCode = mb_strtoupper($targetCurrencyCode);
+
         if ($baseCurrencyCode === null || $baseCurrencyCode === '' || $baseCurrencyCode === '0') {
             $baseCurrencyCode = $this->baseCurrency->code;
         }
 
+        $baseCurrencyCode = mb_strtoupper($baseCurrencyCode);
+
         if (empty($date)) {
-            $date = Carbon::now();
+            $date = Carbon::today();
         } elseif (is_string($date)) {
             $date = Carbon::parse($date);
         }
 
+        $date = $date->startOfDay();
+
         $dateString = $date->format('Y-m-d');
         $cacheKey = "meridian.exchange_rates.$baseCurrencyCode.$targetCurrencyCode.$dateString";
 
-        /** @var array<string, float>|null $cachedRates */
         $cachedRates = Cache::get($cacheKey);
-        if (! empty($cachedRates)) {
+        if (is_array($cachedRates) && $cachedRates !== []) {
+            /** @var array<string, float> $cachedRates */
             return $cachedRates;
         }
 
         $exchangeRates = ExchangeRate::query()
             ->where('base_currency_code', $baseCurrencyCode)
             ->where('target_currency_code', $targetCurrencyCode)
-            ->where('rate_date', $date)
+            ->whereDate('rate_date', $dateString)
             ->pluck('rate', 'target_currency_code');
 
         if ($exchangeRates->count() > 0) {
-            Cache::put($cacheKey, $exchangeRates, 3600);
+            /** @var array<string, float> $rates */
+            $rates = [];
 
-            /** @var array<string, float> */
-            return $exchangeRates->toArray();
+            foreach ($exchangeRates as $currencyCode => $rate) {
+                if (! is_string($currencyCode) || ! is_numeric($rate)) {
+                    continue;
+                }
+
+                $rates[$currencyCode] = (float) $rate;
+            }
+
+            if ($rates === []) {
+                return null;
+            }
+
+            $cacheTtl = config()->integer('meridian.cache_lifetimes.exchange_rates', 1800);
+            Cache::put($cacheKey, $rates, now()->addSeconds($cacheTtl));
+
+            return $rates;
         }
 
         return null;
+    }
+
+    private function resolveDecimalPlaces(string $currencyCode): int
+    {
+        $currency = $this->currencyService->findByCode($currencyCode);
+
+        return $currency instanceof Currency ? $currency->decimal_places : 2;
     }
 }

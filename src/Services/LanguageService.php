@@ -73,12 +73,11 @@ final class LanguageService implements LanguageServiceContract
             return $this->defaultLanguage;
         }
 
-        $configuredCode = Config::get('meridian.default_language_code');
-        $language = null;
-
-        if (is_string($configuredCode) && ($configuredCode !== '' && $configuredCode !== '0')) {
-            $language = $this->findByCode(mb_strtolower($configuredCode));
-        }
+        $configuredCodeValue = Config::get('meridian.default_language_code', 'en');
+        $configuredCode = is_string($configuredCodeValue)
+            ? mb_strtolower(mb_trim($configuredCodeValue))
+            : '';
+        $language = $configuredCode !== '' ? $this->findByCode($configuredCode) : null;
 
         if (! $language instanceof Language) {
             $language = $this->findByCode('en');
@@ -103,27 +102,21 @@ final class LanguageService implements LanguageServiceContract
     public function all(bool $useCache = true, ?int $cacheTtlMinutes = null): Collection
     {
         $cacheKey = 'languages.all';
+        $cacheTtlSeconds = $cacheTtlMinutes !== null
+            ? $cacheTtlMinutes * 60
+            : Config::integer('meridian.cache_lifetimes.languages', 3600);
 
-        $ttl = $cacheTtlMinutes ?? Config::integer('meridian.cache_lifetimes.languages', 60) * 60;
-
-        if ($useCache) {
-            /** @var Collection<int, Language>|null $cachedLanguages */
-            $cachedLanguages = Cache::get($cacheKey);
-            if ($cachedLanguages !== null) {
-                return $cachedLanguages;
-            }
+        if (! $useCache) {
+            /** @var Collection<int, Language> */
+            return Language::query()->where('is_active', true)->orderBy('name')->get();
         }
 
-        $query = Language::query()->where('is_active', true);
-
-        /** @var Collection<int, Language> $languages */
-        $languages = $query->orderBy('name')->get();
-
-        if ($useCache) {
-            Cache::put($cacheKey, $languages, $ttl);
-        }
-
-        return $languages;
+        /** @var Collection<int, Language> */
+        return Cache::remember(
+            $cacheKey,
+            now()->addSeconds($cacheTtlSeconds),
+            fn () => Language::query()->where('is_active', true)->orderBy('name')->get()
+        );
     }
 
     /**
@@ -137,7 +130,9 @@ final class LanguageService implements LanguageServiceContract
     {
         $code = mb_strtolower($code);
         $cacheKey = 'language.code.'.$code;
-        $ttl = $cacheTtlMinutes ?? Config::integer('meridian.cache_lifetimes.languages', 60) * 60;
+        $cacheTtlSeconds = $cacheTtlMinutes !== null
+            ? $cacheTtlMinutes * 60
+            : Config::integer('meridian.cache_lifetimes.languages', 3600);
 
         if ($useCache) {
             /** @var Language|null|false $cachedLanguage False if explicitly cached as not found */
@@ -153,7 +148,7 @@ final class LanguageService implements LanguageServiceContract
         $language = $query->first();
 
         if ($useCache) {
-            Cache::put($cacheKey, $language ?? false, $ttl);
+            Cache::put($cacheKey, $language ?? false, now()->addSeconds($cacheTtlSeconds));
         }
 
         return $language;
@@ -175,9 +170,10 @@ final class LanguageService implements LanguageServiceContract
         $preferredLanguages = request()->getLanguages();
 
         foreach ($preferredLanguages as $lang) {
-            if (in_array(mb_trim($lang), ['', '0'], true)) {
+            if (mb_trim($lang) === '') {
                 continue;
             }
+
             $primaryCode = mb_strtolower(mb_substr($lang, 0, 2));
 
             if (mb_strlen($primaryCode) === 2) {
@@ -194,19 +190,14 @@ final class LanguageService implements LanguageServiceContract
     public function setByBrowserLanguage(): void
     {
         $browserLanguageCode = $this->detectBrowserLanguage();
-        $language = false;
+        $language = $browserLanguageCode !== null ? $this->findByCode($browserLanguageCode) : null;
 
-        if ($browserLanguageCode !== null && $browserLanguageCode !== '' && $browserLanguageCode !== '0') {
-            $language = $this->findByCode($browserLanguageCode);
-        }
-
-        if (! $language) {
+        if (! $language instanceof Language) {
             $language = $this->default();
         }
 
         $this->language = $language;
         Session::put(self::SESSION_KEY_USER_LANGUAGE, $language->code);
-
     }
 
     /**
@@ -221,7 +212,7 @@ final class LanguageService implements LanguageServiceContract
         $defaultLocale = 'en_US';
         $preferredLocales = request()->getLanguages();
 
-        if (empty($preferredLocales) || in_array(mb_trim($preferredLocales[0]), ['', '0'], true)) {
+        if (empty($preferredLocales) || mb_trim($preferredLocales[0]) === '') {
             return $defaultLocale;
         }
 
@@ -230,7 +221,7 @@ final class LanguageService implements LanguageServiceContract
         $parts = preg_split('/[-_]/', $rawLocale, 2);
         $lang = isset($parts[0]) ? mb_strtolower(mb_trim($parts[0])) : null;
 
-        if ($lang === null || $lang === '' || $lang === '0' || mb_strlen($lang) !== 2 || ! ctype_alpha($lang)) {
+        if ($lang === null || $lang === '' || mb_strlen($lang) !== 2 || ! ctype_alpha($lang)) {
             return $defaultLocale;
         }
 

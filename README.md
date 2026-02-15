@@ -1,14 +1,14 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/denprog/meridian.svg?style=flat-square)](https://packagist.org/packages/denprog/meridian)
 [![Total Downloads](https://img.shields.io/packagist/dt/denprog/meridian.svg?style=flat-square)](https://packagist.org/packages/denprog/meridian)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/denprog/meridian/ci.yml?branch=main&style=flat-square)](https://github.com/denprog/meridian/actions)
-[![Coverage Status](https://img.shields.io/coveralls/github/denprog/meridian/main.svg?style=flat-square)](https://coveralls.io/github/denprog/meridian?branch=main)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/denprog5/meridian/tests.yml?branch=main&style=flat-square)](https://github.com/denprog5/meridian/actions)
+[![Coverage Status](https://img.shields.io/coveralls/github/denprog5/meridian/main.svg?style=flat-square)](https://coveralls.io/github/denprog5/meridian?branch=main)
 
 `Meridian` is a comprehensive Open-Source package for Laravel (11.x, 12.x) designed to provide developers with intuitive tools and structured data for working with countries, continents, currencies (including exchange rates), and languages. Simplify internationalization, localization, and geo-dependent features in your applications with an elegant API and a well-thought-out architecture.
 
 ## Requirements
 
--   PHP 8.2+
+-   PHP 8.3+
 -   Laravel 11.x or 12.x
 
 ## Installation & Setup
@@ -21,7 +21,7 @@ composer require denprog/meridian
 
 ### 2. Run the Install Command
 
-This command publishes the configuration file, translations, and runs database migrations.
+This command publishes the configuration file and migrations.
 
 ```bash
 php artisan meridian:install
@@ -114,18 +114,18 @@ $usa = MeridianCountry::findByCode('US');
 // Get the default country (based on config)
 $default = MeridianCountry::default();
 
-// Get 
+// Get country details
 echo MeridianCountry::name(); // United States
 echo MeridianCountry::code(); // US
-echo MeridianCountry::currencyCode() // USD
-echo MeridianCountry::nativeName() // United States
+echo MeridianCountry::currencyCode(); // USD
+echo MeridianCountry::nativeName(); // United States
 echo MeridianCountry::continent()->name(); // North America
-echo MeridianCountry::isoAlpha2Code() // US
-echo MeridianCountry::isoAlpha3Code() // USA
-echo MeridianCountry::defaultName() // United States
-echo MeridianCountry::defaultCode() // US
-echo MeridianCountry::defaultCurrencyCode() // USD
-echo MeridianCountry::defaultNativeName() // United States
+echo MeridianCountry::isoAlpha2Code(); // US
+echo MeridianCountry::isoAlpha3Code(); // USA
+echo MeridianCountry::defaultName(); // United States
+echo MeridianCountry::defaultCode(); // US
+echo MeridianCountry::defaultCurrencyCode(); // USD
+echo MeridianCountry::defaultNativeName(); // United States
 ```
 
 ### Geolocation
@@ -136,7 +136,7 @@ use Denprog\Meridian\Facades\MeridianGeoLocator;
 // Look up an IP address (e.g., from the request)
 $location = MeridianGeoLocator::lookup(request()->ip());
 
-if ($location->success) {
+if (! $location->isEmpty()) {
     echo 'Country: ' . $location->countryName; // e.g., United States
     echo 'City: ' . $location->cityName; // e.g., Mountain View
 }
@@ -157,9 +157,9 @@ MeridianCurrency::set('EUR');
 echo MeridianCurrency::name(); // Euro
 echo MeridianCurrency::code(); // EUR
 echo MeridianCurrency::symbol(); // €
-echo MeridianCurrency::baseName() // US Dollar
-echo MeridianCurrency::baseCode() // USD
-echo MeridianCurrency::baseSymbol() // $
+echo MeridianCurrency::baseName(); // US Dollar
+echo MeridianCurrency::baseCode(); // USD
+echo MeridianCurrency::baseSymbol(); // $
 ```
 
 ### Currency Conversion
@@ -171,8 +171,8 @@ use Denprog\Meridian\Facades\MeridianExchangeRate;
 $convertedAmount = MeridianExchangeRate::convert(100);
 $convertedAmount = MeridianExchangeRate::convert(100, true, 'de_DE');
 
-// Converts an amount between two specified currencies, optionally for a specific date.
-// Make sure you download the exchange rate for the desired currency pair on the desired date MeridianUpdateExchangeRate::update('EUR', 'USD', '2025-01-01')
+// Convert between two currencies on a specific date.
+// Ensure rates for the date are already downloaded.
 $convertedBetween = MeridianExchangeRate::convertBetween(100, 'EUR', 'USD', true, '2025-01-01');
 ```
 
@@ -182,10 +182,11 @@ While it's recommended to update rates via the scheduled Artisan command, you ca
 
 ```php
 use Denprog\Meridian\Facades\MeridianUpdateExchangeRate;
+use Illuminate\Support\Carbon;
 
 // Fetches and saves the latest exchange rates for all active currencies.
-MeridianUpdateExchangeRate::update();
-MeridianUpdateExchangeRate::update('USD', 'GBP', '2025-01-01');
+MeridianUpdateExchangeRate::updateRates();
+MeridianUpdateExchangeRate::updateRates('USD', ['GBP'], Carbon::parse('2025-01-01'));
 ```
 
 ### Language Management
@@ -199,23 +200,31 @@ $currentLanguage = MeridianLanguage::get();
 // Set the current language
 MeridianLanguage::set('de');
 
-// Get the language from the user's browser agent
-$browserLanguage = MeridianLanguage::fromBrowser();
+// Detect browser language and apply it
+$browserLanguage = MeridianLanguage::detectBrowserLanguage();
+MeridianLanguage::setByBrowserLanguage();
 ```
 
-### Global Helper Function
+### Global Helper Functions
 
-The package also includes a `meridian()` helper for easy access to the core services.
+The package also includes lightweight global helpers.
 
 ```php
-// Access the Currency Service
-$currencyService = meridian()->currency();
-echo $currencyService->code(); // e.g., EUR
+// Get service instances
+$currencyService = currency();
+$countryService = country();
+$languageService = language();
+$geoService = geoLocation();
 
-// Access the GeoLocation Service
-$location = meridian()->geoLocator()->lookup('8.8.8.8');
+// Resolve entities directly
+$eur = currency('EUR');
+$germany = country('DE');
+$german = language('de');
+
+// Resolve geolocation for IP
+$location = geoLocation('8.8.8.8');
 echo $location->countryName;
 
-// Access the Country Service
-$germany = meridian()->country()->findByCode('DE');
+// Convert amount using current currency context
+$formatted = exchangeRate(100, true);
 ```

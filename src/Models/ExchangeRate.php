@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Class Currency
+ * Class ExchangeRate
  *
  * @property int $id
  * @property string $base_currency_code

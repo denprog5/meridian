@@ -57,14 +57,14 @@ if (! function_exists('country')) {
 
 if (! function_exists('exchangeRate')) {
     /**
-     * Get the CurrencyConverterContract instance.
+     * Get the CurrencyConverterContract instance or convert amount when provided.
      */
-    function exchangeRate(float|int $amount, bool $returnFormatted = false): CurrencyConverterContract|string|float
+    function exchangeRate(float|int|null $amount = null, bool $returnFormatted = false): CurrencyConverterContract|string|float
     {
         /** @var CurrencyConverterContract $service */
         $service = app(CurrencyConverterContract::class);
 
-        if (! empty($amount)) {
+        if ($amount !== null) {
             return $service->convert($amount, $returnFormatted);
         }
 
@@ -102,7 +102,9 @@ if (! function_exists('geoLocation')) {
             try {
                 return $service->lookup($ipAddress);
             } catch (GeoIpLookupException|InvalidIpAddressException $e) {
-                Log::error($e->getMessage());
+                Log::error('GeoLocation helper lookup failed.', ['exception' => $e, 'ip_address' => $ipAddress]);
+
+                return LocationData::empty($ipAddress);
             }
         }
 

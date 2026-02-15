@@ -42,7 +42,7 @@ describe('Successful Rate Fetching', function (): void {
 
     it('fetches rates for all available target currencies if none specified for the latest date', function (): void {
         $baseCurrency = 'USD';
-        $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8, 'JPY' => 110];
+        $expectedRates = ['EUR' => 0.9, 'GBP' => 0.8, 'JPY' => 110.0];
         $dateString = Carbon::now()->toDateString();
 
         $endpointUrl = API_BASE_URL_FRANKFURTER_TEST.'/v1/latest';

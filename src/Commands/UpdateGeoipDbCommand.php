@@ -9,13 +9,15 @@ use Denprog\Meridian\Exceptions\GeoIPUpdaterException;
 use Denprog\Meridian\Services\Drivers\GeoIP\MaxMindDatabaseDriver;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use PharData;
-use Psr\Log\LoggerInterface;
+use SplFileInfo;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'meridian:update-geoip-db')]
 class UpdateGeoipDbCommand extends Command
 {
     /**
@@ -35,18 +37,21 @@ class UpdateGeoipDbCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(ConfigRepository $config, LoggerInterface $logger): int
+    public function handle(): int
     {
         $this->info('Starting GeoIP database update process...');
 
         try {
-            $licenseKey = $config->string('meridian.geolocation.drivers.maxmind_database.license_key');
-            $accountId = $config->string('meridian.geolocation.drivers.maxmind_database.account_id');
-            $relativeDbPath = $config->string('meridian.geolocation.drivers.maxmind_database.database_path');
+            $licenseKey = config()->string('meridian.geolocation.drivers.maxmind_database.license_key');
+            $accountId = config()->string('meridian.geolocation.drivers.maxmind_database.account_id');
+            $relativeDbPath = config()->string('meridian.geolocation.drivers.maxmind_database.database_path');
             $url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz';
 
             if (empty($licenseKey)) {
                 throw new ConfigurationException('MaxMind license key is not configured (meridian.geolocation.drivers.maxmind_database.license_key).');
+            }
+            if (empty($accountId)) {
+                throw new ConfigurationException('MaxMind account id is not configured (meridian.geolocation.drivers.maxmind_database.account_id).');
             }
             if (empty($relativeDbPath)) {
                 throw new ConfigurationException('MaxMind database storage path is not configured (meridian.geolocation.drivers.maxmind_database.database_path).');
@@ -55,22 +60,21 @@ class UpdateGeoipDbCommand extends Command
             $absoluteStorageDirectory = storage_path($relativeDbPath);
 
             if (! is_dir($absoluteStorageDirectory)) {
-                if (! mkdir($absoluteStorageDirectory, 0755, true)) {
-                    throw new GeoIPUpdaterException("Failed to create GeoIP database storage directory: $absoluteStorageDirectory");
-                }
+                File::ensureDirectoryExists($absoluteStorageDirectory);
                 $this->line("Created storage directory: $absoluteStorageDirectory");
             }
             if (! is_writable($absoluteStorageDirectory)) {
                 throw new GeoIPUpdaterException("GeoIP database storage directory is not writable: $absoluteStorageDirectory");
             }
 
+            /** @var Response $response */
             $response = Http::withBasicAuth($accountId, $licenseKey)
                 ->timeout(300)
                 ->get($url);
 
             if ($response->successful()) {
                 $contentDisposition = $response->header('Content-Disposition');
-                $filename = 'geoip_download.zip';
+                $filename = 'geoip_download.tar.gz';
 
                 if ($contentDisposition && preg_match('/filename="?([^"]+)"?/', $contentDisposition, $matches)) {
                     $filename = $matches[1];
@@ -91,30 +95,30 @@ class UpdateGeoipDbCommand extends Command
 
         } catch (ConfigurationException $e) {
             $this->error('Configuration error: '.$e->getMessage());
-            $logger->error('GeoIP DB Update Configuration Error: '.$e->getMessage());
+            Log::error('GeoIP DB Update Configuration Error: '.$e->getMessage());
 
             return self::FAILURE;
         } catch (GeoIPUpdaterException $e) {
             $this->error('GeoIP Updater error: '.$e->getMessage());
-            $logger->error('GeoIP DB Updater Error: '.$e->getMessage());
+            Log::error('GeoIP DB Updater Error: '.$e->getMessage());
 
             return self::FAILURE;
         } catch (Exception $e) {
             $this->error('An unexpected error occurred: '.$e->getMessage());
-            $logger->error('GeoIP DB Update Unexpected Error: '.$e->getMessage(), ['exception' => $e]);
+            Log::error('GeoIP DB Update Unexpected Error: '.$e->getMessage(), ['exception' => $e]);
 
             return self::FAILURE;
         }
     }
 
     /**
-     * Распаковывает архив GeoLite2 (.tar.gz), находит .mmdb файл и перемещает его
-     * в указанную директорию с заменой.
+     * Extract a GeoLite2 archive (.tar.gz), find the .mmdb file and move it
+     * into the target directory.
      *
-     * @param  string  $archivePath  Полный путь к скачанному .tar.gz файлу.
-     * @param  string  $targetDirectory  Директория, куда нужно поместить .mmdb файл (например, storage_path('app')).
+     * @param  string  $archivePath  Absolute path to downloaded .tar.gz archive.
+     * @param  string  $targetDirectory  Absolute target directory for the .mmdb file.
      *
-     * @throws Exception Если возникают ошибки при обработке.
+     * @throws Exception
      */
     private function processGeoLiteArchive(
         string $archivePath,
@@ -141,7 +145,7 @@ class UpdateGeoipDbCommand extends Command
             $pharTar = new PharData($tarPath);
             $pharTar->extractTo($tempExtractPath, null, true);
 
-            $this->info("Archive $archivePath extracted to  $tempExtractPath");
+            $this->info("Archive $archivePath extracted to $tempExtractPath");
 
             $foundMmdbFile = null;
             $filesAndFolders = File::directories($tempExtractPath);
@@ -168,16 +172,24 @@ class UpdateGeoipDbCommand extends Command
             }
 
             if (! $foundMmdbFile) {
-                throw new Exception("File GeoLite2-City.mmdb not found in unpacked archive $archivePath. Content of $tempExtractPath: ".implode(', ', File::allFiles($tempExtractPath)));
+                $allFiles = File::allFiles($tempExtractPath);
+                $fileList = $allFiles === []
+                    ? '[no files found]'
+                    : implode(', ', array_map(
+                        static fn (SplFileInfo $file): string => $file->getPathname(),
+                        $allFiles
+                    ));
+
+                throw new Exception("File $fileName not found in unpacked archive $archivePath. Content of $tempExtractPath: $fileList");
             }
 
             File::ensureDirectoryExists($targetDirectory);
             $finalMmdbPath = $targetDirectory.DIRECTORY_SEPARATOR.$fileName;
 
             if (File::move($foundMmdbFile, $finalMmdbPath)) {
-                $this->info("File GeoLite2-City.mmdb successfully moved to $finalMmdbPath");
+                $this->info("File $fileName successfully moved to $finalMmdbPath");
             } else {
-                throw new Exception("Does not moved file GeoLite2-City.mmdb from $foundMmdbFile to $finalMmdbPath");
+                throw new Exception("Could not move file $fileName from $foundMmdbFile to $finalMmdbPath");
             }
 
         } catch (Exception $e) {

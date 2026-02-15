@@ -19,18 +19,18 @@ interface CurrencyConverterContract
      * The active display currency is determined by CurrencyService (e.g., from session or default).
      * Uses the latest available exchange rate.
      *
-     * @param  float  $amount  The amount to convert (in system base currency).
+     * @param  float|int  $amount  The amount to convert (in system base currency).
      * @param  bool  $returnFormatted  If true, returns the amount formatted as a string with the active display currency symbol and locale rules.
      *                                 If false, returns the raw converted float amount.
      * @param  string|null  $locale  The locale to use for formatting if $returnFormatted is true. Defaults to the application's current locale.
      * @return string|float The converted amount (string if formatted, float otherwise).
      */
-    public function convert(float $amount, bool $returnFormatted = false, ?string $locale = null): float|string;
+    public function convert(float|int $amount, bool $returnFormatted = false, ?string $locale = null): float|string;
 
     /**
      * Converts an amount between two specified currencies, optionally for a specific date.
      *
-     * @param  float  $amount  The amount to convert.
+     * @param  float|int  $amount  The amount to convert.
      * @param  string  $toCurrencyCode  The ISO 4217 code of the currency to convert to.
      * @param  string|null  $fromCurrencyCode  The ISO 4217 code of the currency to convert from. Defaults to null (system base currency).
      * @param  bool  $returnFormatted  If true, returns the amount formatted as a string with the target currency symbol and locale rules.
@@ -39,7 +39,7 @@ interface CurrencyConverterContract
      * @param  string|null  $locale  The locale to use for formatting if $returnFormatted is true. Defaults to the application's current locale.
      * @return string|float The converted amount (string if formatted, float otherwise).
      */
-    public function convertBetween(float $amount, string $toCurrencyCode, ?string $fromCurrencyCode = null, bool $returnFormatted = false, string|Carbon|null $date = null, ?string $locale = null): float|string;
+    public function convertBetween(float|int $amount, string $toCurrencyCode, ?string $fromCurrencyCode = null, bool $returnFormatted = false, string|Carbon|null $date = null, ?string $locale = null): float|string;
 
     /**
      * Formats a given amount using specified currency and locale rules.
@@ -59,7 +59,7 @@ interface CurrencyConverterContract
      * @param  string|Carbon|null  $date  The date for which to fetch the exchange rate. Defaults to null (latest available rate).
      * @return float The exchange rate.
      */
-    public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float|string;
+    public function getRate(string $targetCurrencyCode, ?string $baseCurrencyCode = null, string|Carbon|null $date = null): float;
 
     /**
      * Retrieves multiple exchange rates for a target currency against a base currency for a specific date.

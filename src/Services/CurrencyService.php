@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
+use RuntimeException;
 
 /**
  * Service class for handling currency-related operations.
@@ -32,8 +33,16 @@ final class CurrencyService implements CurrencyServiceContract
     {
         /** @var string[]|null $activeCodes */
         $activeCodes = Config::get('meridian.active_currencies');
-        if (! empty($activeCodes)) {
-            $this->configuredActiveCurrencyCodes = array_map('strtoupper', $activeCodes);
+        if (is_array($activeCodes) && $activeCodes !== []) {
+            $normalizedCodes = array_filter(
+                $activeCodes,
+                static fn (string $code): bool => $code !== ''
+            );
+
+            $this->configuredActiveCurrencyCodes = array_values(array_unique(array_map(
+                static fn (string $code): string => mb_strtoupper($code),
+                $normalizedCodes
+            )));
         } else {
             $this->configuredActiveCurrencyCodes = [
                 'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR',  'GBP', 'HKD',
@@ -41,7 +50,6 @@ final class CurrencyService implements CurrencyServiceContract
                 'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR',
             ];
         }
-
     }
 
     /**
@@ -53,10 +61,17 @@ final class CurrencyService implements CurrencyServiceContract
             return $this->baseCurrency;
         }
 
-        $configuredBaseCurrencyCode = Config::string('meridian.base_currency_code', 'USD');
+        $configuredBaseCurrencyCode = mb_strtoupper(Config::string('meridian.base_currency_code', 'USD'));
 
-        /** @var Currency $baseCurrency */
         $baseCurrency = $this->findByCode($configuredBaseCurrencyCode, false);
+
+        if (! $baseCurrency instanceof Currency && $configuredBaseCurrencyCode !== 'USD') {
+            $baseCurrency = $this->findByCode('USD', false);
+        }
+
+        if (! $baseCurrency instanceof Currency) {
+            throw new RuntimeException("Base currency '{$configuredBaseCurrencyCode}' (or fallback 'USD') was not found.");
+        }
 
         $this->baseCurrency = $baseCurrency;
 
@@ -153,14 +168,14 @@ final class CurrencyService implements CurrencyServiceContract
      */
     public function set(string $currencyCode): void
     {
-        $currency = false;
+        $currency = null;
         $currencyCode = mb_strtoupper($currencyCode);
 
-        if (in_array($currencyCode, $this->configuredActiveCurrencyCodes)) {
+        if (in_array($currencyCode, $this->configuredActiveCurrencyCodes, true)) {
             $currency = $this->findByCode($currencyCode);
         }
 
-        if (! $currency || ! $currency->enabled) {
+        if (! $currency instanceof Currency || ! $currency->enabled) {
             $currency = $this->baseCurrency();
         }
 
@@ -170,17 +185,17 @@ final class CurrencyService implements CurrencyServiceContract
 
     /**
      * Get the list of configured "active" currency models.
-     * If `meridian.active_currencies` is not set or empty, it returns all enabled currencies.
+     * If `meridian.active_currencies` is not set or empty, it falls back to an internal default list.
      *
      * @return Collection<int, Currency>
      */
     public function list(): Collection
     {
         $cacheKey = 'meridian.active_currencies_collection';
-        $cacheTtlMinutes = Config::integer('meridian.cache_duration_minutes.active_currencies_list', 60);
+        $cacheTtlSeconds = Config::integer('meridian.cache_lifetimes.currencies', 3600);
 
         /** @var Collection<int, Currency> */
-        return Cache::remember($cacheKey, now()->addMinutes($cacheTtlMinutes), fn () => Currency::query()->whereIn('code', $this->configuredActiveCurrencyCodes)
+        return Cache::remember($cacheKey, now()->addSeconds($cacheTtlSeconds), fn () => Currency::query()->whereIn('code', $this->configuredActiveCurrencyCodes)
             ->where('enabled', true)
             ->orderBy('code')
             ->get());

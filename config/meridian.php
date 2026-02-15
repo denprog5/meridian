@@ -44,6 +44,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Active Currencies
+    |--------------------------------------------------------------------------
+    |
+    | An array of ISO 4217 currency codes that are available for selection.
+    | If empty, Meridian falls back to an internal default list.
+    | Example: ['USD', 'EUR', 'GBP']
+    |
+    */
+    'active_currencies' => [],
+
+    /*
+    |--------------------------------------------------------------------------
     | Target Currency Codes For Exchange Rates
     |--------------------------------------------------------------------------
     |

@@ -73,6 +73,7 @@
         "lint": "pint",
         "lint:check": "pint --test",
         "analyse": "phpstan analyse --ansi",
+        "security:audit": "composer audit --locked --no-interaction",
         "test": "pest --colors=always",
         "test:coverage": "pest --colors=always --coverage --min=60",
         "refactor": "rector",
@@ -80,6 +81,7 @@
         "check": [
             "@lint:check",
             "@analyse",
+            "@security:audit",
             "@test"
         ]
     },

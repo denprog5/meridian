@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.2.1] - 2026-02-16
+
+### Added
+- `meridian:doctor` command for runtime diagnostics and health checks.
+- Retry, lock and dry-run options for `meridian:update-exchange-rates`.
+- Retry, lock and dry-run options for `meridian:update-geoip-db`.
+- GeoIP archive checksum configuration via `meridian.geolocation.drivers.maxmind_database.expected_sha256`.
+- Command runtime configuration section under `meridian.commands.*`.
+- CI quality job with lint, static analysis and Composer security audit.
+- CI backward-compatibility job using Roave BackwardCompatibilityCheck.
+- `UPGRADE.md` with migration notes for `1.2.1`.
+
+### Changed
+- Improved GeoIP update flow with archive response validation and atomic archive file persistence.
+- Updated README command examples and troubleshooting guidance.
+- Updated CONTRIBUTING docs to reflect current quality commands.
+
 ## [1.2.0] - 2026-02-06
 
 ### Added

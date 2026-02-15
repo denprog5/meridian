@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Denprog\Meridian;
 
+use Denprog\Meridian\Commands\DoctorCommand;
 use Denprog\Meridian\Commands\InstallCommand;
 use Denprog\Meridian\Commands\InstallDataCommand;
 use Denprog\Meridian\Commands\UpdateExchangeRatesCommand;
@@ -41,6 +42,7 @@ class MeridianServiceProvider extends BaseServiceProvider
     protected array $commands = [
         InstallCommand::class,
         InstallDataCommand::class,
+        DoctorCommand::class,
         UpdateExchangeRatesCommand::class,
         UpdateGeoipDbCommand::class,
     ];

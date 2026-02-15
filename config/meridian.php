@@ -94,6 +94,7 @@ return [
                 'account_id' => env('MAXMIND_ACCOUNT_ID'),
                 'database_path' => env('MERIDIAN_GEOIP_DATABASE_PATH', 'meridian'),
                 'database_filename' => env('MERIDIAN_GEOIP_DATABASE_FILENAME', 'GeoLite2-City.mmdb'),
+                'expected_sha256' => env('MERIDIAN_GEOIP_DB_SHA256'),
                 'editions' => [
                     env('MAXMIND_EDITION', 'GeoLite2-City'),
                 ],
@@ -161,5 +162,29 @@ return [
 
         // Number of past days of exchange rates to fetch if the provider supports it.
         'historical_days' => 90,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Console Command Runtime Settings
+    |--------------------------------------------------------------------------
+    |
+    | Runtime settings for package commands (locks, retry behavior and
+    | download validation thresholds).
+    |
+    */
+    'commands' => [
+        'update_exchange_rates' => [
+            'lock_seconds' => 300,
+            'retries' => 2,
+            'retry_delay_ms' => 500,
+        ],
+
+        'update_geoip_db' => [
+            'lock_seconds' => 1800,
+            'retries' => 3,
+            'retry_delay_ms' => 1000,
+            'min_archive_bytes' => 10_240,
+        ],
     ],
 ];

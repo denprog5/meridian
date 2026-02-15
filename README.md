@@ -11,6 +11,12 @@
 -   PHP 8.3+
 -   Laravel 11.x or 12.x
 
+## Compatibility Matrix
+
+| Meridian | PHP | Laravel |
+| --- | --- | --- |
+| 1.2.x | 8.3, 8.4 | 11.x, 12.x |
+
 ## Installation & Setup
 
 ### 1. Install via Composer
@@ -42,6 +48,7 @@ After publishing, the main configuration file is `config/meridian.php`. For GeoI
 ```env
 MAXMIND_ACCOUNT_ID=your_account_id
 MAXMIND_LICENSE_KEY=your_license_key
+MERIDIAN_GEOIP_DB_SHA256=optional_sha256_checksum
 ```
 
 ### 5. Schedule Data Updates
@@ -74,14 +81,21 @@ use Illuminate\Console\Scheduling\Schedule;
 Meridian provides several Artisan commands to manage your data:
 
 ```bash
-# Install the package (publish config, migrations, run migrations)
+# Install the package (publish config and migrations)
 php artisan meridian:install
+php artisan meridian:install --force
 
 # Seed the database with countries, currencies, and languages
 php artisan meridian:install-data
 
+# Run package health diagnostics
+php artisan meridian:doctor
+php artisan meridian:doctor --json
+
 # Update GeoIP database
 php artisan meridian:update-geoip-db
+php artisan meridian:update-geoip-db --dry-run
+php artisan meridian:update-geoip-db --retries=5 --retry-delay=1500
 
 # Update exchange rates (with optional parameters)
 php artisan meridian:update-exchange-rates
@@ -89,16 +103,28 @@ php artisan meridian:update-exchange-rates --base=EUR
 php artisan meridian:update-exchange-rates --targets=GBP --targets=JPY
 php artisan meridian:update-exchange-rates --date=2025-01-15
 php artisan meridian:update-exchange-rates --base=USD --targets=EUR --date=2025-01-15
+php artisan meridian:update-exchange-rates --dry-run
+php artisan meridian:update-exchange-rates --retries=3 --retry-delay=700
 ```
 
 **Exchange Rate Command Options:**
 - `--base` - Specify the base currency code (default: from config)
 - `--targets` - Specify target currencies (can be used multiple times)
 - `--date` - Fetch rates for a specific date (format: YYYY-MM-DD)
+- `--dry-run` - Validate and print execution plan without updating rates
+- `--retries` - Number of retries for failed update attempts
+- `--retry-delay` - Delay (ms) between retries
+- `--lock-seconds` - Lock lifetime to prevent overlapping runs
+
+**GeoIP Command Options:**
+- `--dry-run` - Validate configuration and show execution plan only
+- `--retries` - Number of retries for archive download
+- `--retry-delay` - Delay (ms) between retries
+- `--lock-seconds` - Lock lifetime to prevent overlapping runs
 
 ## Usage
 
-Meridian provides a simple and elegant API through its facades and a global helper function.
+Meridian provides a simple and elegant API through facades and global helper functions.
 
 ### Country Data
 
@@ -228,3 +254,16 @@ echo $location->countryName;
 // Convert amount using current currency context
 $formatted = exchangeRate(100, true);
 ```
+
+## Troubleshooting
+
+- `meridian:doctor` reports missing base/default entities:
+  - Run `php artisan meridian:install-data` and verify `config/meridian.php` values.
+- GeoIP update fails with authentication/configuration errors:
+  - Check `MAXMIND_ACCOUNT_ID`, `MAXMIND_LICENSE_KEY`, and optional `MERIDIAN_GEOIP_DB_SHA256`.
+- GeoIP update says lock is already acquired:
+  - Wait for the running task to finish or reduce lock time in `meridian.commands.update_geoip_db.lock_seconds`.
+- Exchange rate update keeps failing:
+  - Run with `--dry-run`, then increase retries (`--retries`, `--retry-delay`) and verify provider URL.
+- CI security audit fails:
+  - Run `composer security:audit` locally and update vulnerable dependencies.

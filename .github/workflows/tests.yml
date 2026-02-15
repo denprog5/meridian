@@ -2,6 +2,9 @@ name: Tests
 
 on: ['push', 'pull_request']
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
@@ -43,3 +46,50 @@ jobs:
 
     - name: Tests
       run: composer test
+
+  quality:
+    runs-on: ubuntu-latest
+    name: Quality (lint, static, audit)
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.4
+        extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite, bcmath, intl, fileinfo
+        coverage: none
+
+    - name: Install Composer dependencies
+      run: composer update --prefer-stable --no-interaction --prefer-dist
+
+    - name: Lint
+      run: composer lint:check
+
+    - name: Static analysis
+      run: composer analyse
+
+    - name: Security audit
+      run: composer audit --locked --no-interaction
+
+  backward-compatibility:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    name: Backward compatibility
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Run backward compatibility check
+      run: |
+        docker run --rm \
+          -v "${{ github.workspace }}:/app" \
+          ghcr.io/roave/backward-compatibility-check:8.15 \
+          /app \
+          --from="${{ github.event.pull_request.base.sha }}" \
+          --to="${{ github.sha }}"

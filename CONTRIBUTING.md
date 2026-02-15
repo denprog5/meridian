@@ -29,6 +29,11 @@ Lint your code:
 ```bash
 composer lint
 ```
+
+Check formatting only:
+```bash
+composer lint:check
+```
 ## Tests
 
 Run all tests:
@@ -38,10 +43,15 @@ composer test
 
 Check types:
 ```bash
-composer test:types
+composer analyse
 ```
 
-Unit tests:
+Security audit:
 ```bash
-composer test:unit
+composer security:audit
+```
+
+Run the full quality gate used in CI:
+```bash
+composer check
 ```

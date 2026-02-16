@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.2.1] - 2026-02-16
+## [1.2.2] - 2026-02-16
 
 ### Added
 - `meridian:doctor` command for runtime diagnostics and health checks.
@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Improved GeoIP update flow with archive response validation and atomic archive file persistence.
 - Updated README command examples and troubleshooting guidance.
 - Updated CONTRIBUTING docs to reflect current quality commands.
+
+### Fixed
+- Made `meridian:update-geoip-db` dry-run and lock flows deterministic in CI and test environments.
 
 ## [1.2.0] - 2026-02-06
 

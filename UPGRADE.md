@@ -1,8 +1,8 @@
 # Upgrade Guide
 
-## Upgrading from 1.2.0 to 1.2.1
+## Upgrading from 1.2.1 to 1.2.2
 
-Version `1.2.1` is backward-compatible and focuses on runtime hardening, CI checks and operational tooling.
+Version `1.2.2` is backward-compatible and focuses on runtime hardening, CI checks and operational tooling.
 
 ### What changed
 
@@ -40,4 +40,10 @@ MERIDIAN_GEOIP_DB_SHA256=
 
 ```bash
 php artisan meridian:doctor
+```
+
+5. Optional: validate deterministic GeoIP command behavior in your environment:
+
+```bash
+php artisan meridian:update-geoip-db --dry-run
 ```

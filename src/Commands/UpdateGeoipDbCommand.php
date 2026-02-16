@@ -52,53 +52,39 @@ class UpdateGeoipDbCommand extends Command
         $this->info('Starting GeoIP database update process...');
 
         try {
-            $licenseKey = config()->string('meridian.geolocation.drivers.maxmind_database.license_key');
-            $accountId = config()->string('meridian.geolocation.drivers.maxmind_database.account_id');
-            $relativeDbPath = config()->string('meridian.geolocation.drivers.maxmind_database.database_path');
-            $url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz';
-            $expectedSha256 = config()->string('meridian.geolocation.drivers.maxmind_database.expected_sha256', '');
-            $minimumArchiveBytes = config()->integer('meridian.commands.update_geoip_db.min_archive_bytes', 10_240);
-
             $retries = $this->resolvePositiveIntOption(
                 'retries',
-                config()->integer('meridian.commands.update_geoip_db.retries', 3)
+                $this->readIntConfig('meridian.commands.update_geoip_db.retries', 3)
             );
             $retryDelayMs = $this->resolveNonNegativeIntOption(
                 'retry-delay',
-                config()->integer('meridian.commands.update_geoip_db.retry_delay_ms', 1000)
+                $this->readIntConfig('meridian.commands.update_geoip_db.retry_delay_ms', 1000)
             );
             $lockSeconds = $this->resolvePositiveIntOption(
                 'lock-seconds',
-                config()->integer('meridian.commands.update_geoip_db.lock_seconds', 1800)
+                $this->readIntConfig('meridian.commands.update_geoip_db.lock_seconds', 1800)
             );
 
-            if (empty($licenseKey)) {
-                throw new ConfigurationException('MaxMind license key is not configured (meridian.geolocation.drivers.maxmind_database.license_key).');
-            }
-            if (empty($accountId)) {
-                throw new ConfigurationException('MaxMind account id is not configured (meridian.geolocation.drivers.maxmind_database.account_id).');
-            }
-            if (empty($relativeDbPath)) {
-                throw new ConfigurationException('MaxMind database storage path is not configured (meridian.geolocation.drivers.maxmind_database.database_path).');
-            }
-
-            $absoluteStorageDirectory = storage_path($relativeDbPath);
-
-            if (! is_dir($absoluteStorageDirectory)) {
-                File::ensureDirectoryExists($absoluteStorageDirectory);
-                $this->line("Created storage directory: $absoluteStorageDirectory");
-            }
-            if (! is_writable($absoluteStorageDirectory)) {
-                throw new GeoIPUpdaterException("GeoIP database storage directory is not writable: $absoluteStorageDirectory");
-            }
+            $url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz';
 
             if ((bool) $this->option('dry-run')) {
+                $previewRelativePath = $this->readStringConfig(
+                    'meridian.geolocation.drivers.maxmind_database.database_path',
+                    'meridian'
+                );
+                $previewExpectedSha256 = $this->readStringConfig(
+                    'meridian.geolocation.drivers.maxmind_database.expected_sha256',
+                    ''
+                );
+
+                $absoluteStorageDirectory = storage_path($previewRelativePath === '' ? 'meridian' : $previewRelativePath);
+
                 $this->warn('Dry run mode enabled. No files were downloaded or replaced.');
                 $this->line("  URL: $url");
                 $this->line("  Target directory: $absoluteStorageDirectory");
                 $this->line("  Retry attempts: $retries");
                 $this->line("  Retry delay: {$retryDelayMs}ms");
-                if ($expectedSha256 !== '') {
+                if ($previewExpectedSha256 !== '') {
                     $this->line('  SHA-256 validation: enabled');
                 }
 
@@ -113,6 +99,32 @@ class UpdateGeoipDbCommand extends Command
             }
 
             try {
+                $licenseKey = $this->readStringConfig('meridian.geolocation.drivers.maxmind_database.license_key');
+                $accountId = $this->readStringConfig('meridian.geolocation.drivers.maxmind_database.account_id');
+                $relativeDbPath = $this->readStringConfig('meridian.geolocation.drivers.maxmind_database.database_path');
+                $expectedSha256 = $this->readStringConfig('meridian.geolocation.drivers.maxmind_database.expected_sha256', '');
+                $minimumArchiveBytes = $this->readIntConfig('meridian.commands.update_geoip_db.min_archive_bytes', 10_240);
+
+                if ($licenseKey === '') {
+                    throw new ConfigurationException('MaxMind license key is not configured (meridian.geolocation.drivers.maxmind_database.license_key).');
+                }
+                if ($accountId === '') {
+                    throw new ConfigurationException('MaxMind account id is not configured (meridian.geolocation.drivers.maxmind_database.account_id).');
+                }
+                if ($relativeDbPath === '') {
+                    throw new ConfigurationException('MaxMind database storage path is not configured (meridian.geolocation.drivers.maxmind_database.database_path).');
+                }
+
+                $absoluteStorageDirectory = storage_path($relativeDbPath);
+
+                if (! is_dir($absoluteStorageDirectory)) {
+                    File::ensureDirectoryExists($absoluteStorageDirectory);
+                    $this->line("Created storage directory: $absoluteStorageDirectory");
+                }
+                if (! is_writable($absoluteStorageDirectory)) {
+                    throw new GeoIPUpdaterException("GeoIP database storage directory is not writable: $absoluteStorageDirectory");
+                }
+
                 $response = $this->downloadArchiveWithRetry($url, $accountId, $licenseKey, $retries, $retryDelayMs);
 
                 $contentDisposition = $response->header('Content-Disposition');
@@ -158,6 +170,28 @@ class UpdateGeoipDbCommand extends Command
 
             return self::FAILURE;
         }
+    }
+
+    private function readStringConfig(string $key, string $default = ''): string
+    {
+        $value = config()->get($key, $default);
+
+        return is_string($value) ? $value : $default;
+    }
+
+    private function readIntConfig(string $key, int $default): int
+    {
+        $value = config()->get($key, $default);
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+
+        return $default;
     }
 
     /**
